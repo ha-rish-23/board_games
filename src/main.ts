@@ -9,12 +9,15 @@ import './main.css';
 
 // Main application initialization
 function initApp() {
+  console.log('initApp called');
   const app = document.getElementById('app');
   
   if (!app) {
     console.error('App mount point not found');
     return;
   }
+  
+  console.log('App element found, rendering UI...');
   
   // Render UI
   app.innerHTML = `
@@ -71,7 +74,9 @@ function initApp() {
     </div>
   `;
   
+  console.log('UI rendered, setting up listeners...');
   setupEventListeners();
+  console.log('App initialized successfully!');
 }
 
 function setupEventListeners() {
@@ -159,8 +164,15 @@ function generateRoomCode(): string {
 }
 
 // Initialize when DOM is ready
+console.log('Script loaded, readyState:', document.readyState);
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
+  console.log('Waiting for DOMContentLoaded...');
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded fired');
+    initApp();
+  });
 } else {
+  console.log('DOM already ready, initializing...');
   initApp();
 }
