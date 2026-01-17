@@ -1,11 +1,15 @@
 {
   "name": "board_games",
   "version": "1.0.0",
+  "type": "module",
   "description": "Century: Golem Edition - Server-authoritative game engine",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build-tsc": "tsc",
     "test": "node --experimental-vm-modules src/__tests__/runTests.ts",
     "test:watch": "nodemon --exec npm test"
   },
@@ -17,8 +21,13 @@
   ],
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "peerjs": "^1.5.5"
+  },
   "devDependencies": {
     "@types/node": "^20.19.30",
-    "typescript": "^5.0.0"
+    "terser": "^5.46.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.4.11"
   }
 }

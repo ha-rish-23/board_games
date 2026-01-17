@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Century: Golem Edition - Browser-based P2P multiplayer board game">
   <title>Century: Golem Edition - P2P Multiplayer</title>
   <style>
     * {
@@ -15,38 +16,27 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       padding: 20px;
     }
     
-    .container {
+    #app {
+      max-width: 1200px;
+      margin: 0 auto;
       background: white;
       border-radius: 12px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      max-width: 900px;
-      width: 100%;
       padding: 40px;
+      min-height: 80vh;
     }
     
-    h1 {
-      color: #333;
-      margin-bottom: 10px;
-      font-size: 2.5em;
-    }
-    
-    .subtitle {
-      color: #666;
-      margin-bottom: 30px;
-      font-size: 1.1em;
-    }
-    
-    .tab-buttons {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 30px;
-      border-bottom: 2px solid #e0e0e0;
+    /* Loading indicator while app initializes */
+    #app:empty::before {
+      content: 'Loading game...';
+      display: block;
+      text-align: center;
+      padding: 100px;
+      font-size: 1.5em;
+      color: #667eea;
     }
     
     .tab-button {
@@ -198,154 +188,14 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🎮 Century: Golem Edition</h1>
-    <p class="subtitle">Peer-to-Peer Multiplayer - No Server Required</p>
-    
-    <div class="status info">⚠️ Project Setup Required</div>
-    
-    <div class="tab-buttons">
-      <button class="tab-button active" onclick="switchTab('setup')">Setup Instructions</button>
-      <button class="tab-button" onclick="switchTab('about')">About</button>
-    </div>
-    
-    <div id="setup-tab" class="tab-content active">
-      <h2 style="margin-bottom: 20px; color: #333;">Why You're Seeing This Page</h2>
-      
-      <div class="info-box">
-        <h3>🔧 Configuration Needed</h3>
-        <p>This project uses <strong>TypeScript with CommonJS modules</strong>, which don't run directly in browsers.</p>
-        <p>To deploy the P2P game, you need to:</p>
-      </div>
-      
-      <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Option 1: Use a Bundler (Recommended)</h3>
-      <div class="info-box">
-        <p><strong>1. Install a bundler (Vite or Webpack):</strong></p>
-        <p><code>npm install --save-dev vite</code></p>
-        <br>
-        <p><strong>2. Update tsconfig.json to use ES modules:</strong></p>
-        <p><code>"module": "ES2020"</code> instead of <code>"commonjs"</code></p>
-        <br>
-        <p><strong>3. Create vite.config.js:</strong></p>
-        <textarea readonly style="font-family: monospace; font-size: 0.9em;">
-import { defineConfig } from 'vite';
-import { resolve } from 'path';
-
-export default defineConfig({
-  base: '/board_games/',
-  build: {
-    outDir: 'dist',
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html')
-      }
-    }
-  }
-});
-        </textarea>
-        <br><br>
-        <p><strong>4. Add to package.json scripts:</strong></p>
-        <p><code>"dev": "vite"</code></p>
-        <p><code>"build": "vite build"</code></p>
-        <br>
-        <p><strong>5. Build and deploy:</strong></p>
-        <p><code>npm run build</code></p>
-        <p><code>git add dist</code></p>
-        <p><code>git commit -m "Build for GitHub Pages"</code></p>
-        <p><code>git push</code></p>
-        <br>
-        <p><strong>6. Configure GitHub Pages:</strong></p>
-        <p>Go to repo Settings → Pages → Source: Deploy from branch → Branch: main → Folder: /dist</p>
-      </div>
-      
-      <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Option 2: Use CDN (Quick but Limited)</h3>
-      <div class="info-box">
-        <p>Load PeerJS directly via CDN and write inline JavaScript (no build step).</p>
-        <p>See the example in <code>src/p2p/BROWSER_ROOM.md</code></p>
-      </div>
-      
-      <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">Option 3: GitHub Actions Auto-Deploy</h3>
-      <div class="info-box">
-        <p>Create <code>.github/workflows/deploy.yml</code> to automatically build and deploy on push.</p>
-        <textarea readonly style="font-family: monospace; font-size: 0.9em;">
-name: Deploy to GitHub Pages
-
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: npm install
-      - run: npm run build
-      - uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-        </textarea>
-      </div>
-    </div>
-    
-    <div id="about-tab" class="tab-content">
-      <h2 style="margin-bottom: 20px; color: #333;">About This Project</h2>
-      
-      <div class="info-box">
-        <h3>🎯 Features</h3>
-        <p>✅ Pure deterministic game engine (57 passing tests)</p>
-        <p>✅ Host-authoritative P2P architecture (no server needed)</p>
-        <p>✅ Browser-only multiplayer via PeerJS/WebRTC</p>
-        <p>✅ 4-layer state consistency safeguards</p>
-        <p>✅ Comprehensive error handling and recovery</p>
-      </div>
-      
-      <div class="info-box">
-        <h3>📁 Project Structure</h3>
-        <p><code>src/engine/</code> - Pure game logic (validation, actions, turns)</p>
-        <p><code>src/p2p/</code> - P2P networking (host, client, sync, UI)</p>
-        <p><code>src/api/</code> - REST API wrapper (optional)</p>
-        <p><code>src/types/</code> - TypeScript type definitions</p>
-      </div>
-      
-      <div class="info-box">
-        <h3>🚀 Key Files</h3>
-        <p><code>browserRoom.ts</code> - Host game creation and management</p>
-        <p><code>browserClient.ts</code> - Client join and action handling</p>
-        <p><code>uiSync.ts</code> - UI state synchronization</p>
-        <p><code>BROWSER_ROOM.md</code> - Complete P2P documentation</p>
-      </div>
-      
-      <div class="info-box">
-        <h3>📖 Documentation</h3>
-        <p>All P2P functionality is documented in <code>src/p2p/BROWSER_ROOM.md</code></p>
-        <p>View on GitHub: <a href="https://github.com/ha-rish-23/board_games/blob/main/src/p2p/BROWSER_ROOM.md" target="_blank">BROWSER_ROOM.md</a></p>
-      </div>
-    </div>
-  </div>
+  <!-- Root element where the game UI will be mounted -->
+  <div id="app"></div>
   
-  <script>
-    function switchTab(tabName) {
-      // Hide all tabs
-      document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-      });
-      
-      // Remove active from all buttons
-      document.querySelectorAll('.tab-button').forEach(btn => {
-        btn.classList.remove('active');
-      });
-      
-      // Show selected tab
-      document.getElementById(tabName + '-tab').classList.add('active');
-      
-      // Activate button
-      event.target.classList.add('active');
-    }
-  </script>
+  <!-- 
+    Vite Entry Point: References TypeScript directly
+    Vite will compile and bundle this during development and build
+    In production, this becomes: <script src="/board_games/assets/main-[hash].js">
+  -->
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
