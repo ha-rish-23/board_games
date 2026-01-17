@@ -80,7 +80,9 @@ function setupEventListeners() {
   tabButtons.forEach(button => {
     button.addEventListener('click', () => {
       const tabName = button.getAttribute('data-tab');
-      switchTab(tabName);
+      if (tabName) {
+        switchTab(tabName);
+      }
     });
   });
   
