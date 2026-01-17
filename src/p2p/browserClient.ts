@@ -226,17 +226,23 @@ export class P2PGameClient {
   private async initializePeerClient(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.peer = new Peer(this.clientPeerId, {
-        debug: 2
+        debug: 2,
+        // Use default PeerJS cloud server - requires internet
+        host: '0.peerjs.com',
+        port: 443,
+        path: '/',
+        secure: true
       });
       
       this.peer.on('open', (id: string) => {
         console.log('[Client] PeerJS initialized:', id);
+        console.log('[Client] Connected to signaling server');
         resolve();
       });
       
       this.peer.on('error', (err: Error) => {
         console.error('[Client] PeerJS error:', err);
-        reject(err);
+        reject(new Error(`Failed to connect to signaling server: ${err.message}`));
       });
       
       this.peer.on('disconnected', () => {

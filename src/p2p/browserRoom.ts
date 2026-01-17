@@ -227,23 +227,29 @@ export class P2PGameRoom {
     return new Promise((resolve, reject) => {
       // Create peer with explicit ID
       this.peer = new Peer(this.hostPeerId, {
-        // Optional: Configure PeerJS server (default uses free cloud server)
-        // For LAN-only, you can run your own PeerServer
-        debug: 2 // Debug level (0=none, 3=all)
+        debug: 2, // Debug level (0=none, 3=all)
+        // Use default PeerJS cloud server - requires internet
+        host: '0.peerjs.com',
+        port: 443,
+        path: '/',
+        secure: true
       });
       
       this.peer.on('open', (id: string) => {
+        console.log('[Room] PeerJS host initialized:', id);
+        console.log('[Room] Connected to signaling server');
         this.setupPeerListeners();
         resolve();
       });
       
       this.peer.on('error', (err: Error) => {
         console.error('[Room] PeerJS error:', err);
-        reject(err);
+        reject(new Error(`Failed to connect to signaling server: ${err.message}`));
       });
       
       // Connection listener
       this.peer.on('connection', (conn: DataConnection) => {
+        console.log('[Room] Incoming connection from:', conn.peer);
         this.handleIncomingConnection(conn);
       });
       
