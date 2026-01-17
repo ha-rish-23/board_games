@@ -1,3 +1,44 @@
+/**
+ * TURN SYSTEM - Turn-based multiplayer state machine
+ * 
+ * ASYNC MULTIPLAYER SAFETY:
+ * This module manages turn order and prevents out-of-turn actions.
+ * Essential for ensuring fairness in async multiplayer games.
+ * 
+ * Key Properties:
+ * 1. DETERMINISTIC: Turn order is fixed based on player array
+ * 2. STATELESS: No timers, no external dependencies
+ * 3. FAIR: All players get equal opportunities to act
+ * 4. SEQUENTIAL: Only one player can act at a time
+ * 5. NO TIMING: Turn doesn't auto-advance (player actions required)
+ * 
+ * Turn-Based Model Benefits:
+ * - Eliminates race conditions (only current player can act)
+ * - No time pressure (turns don't expire)
+ * - Players can reconnect and resume without penalty
+ * - Simple state: currentPlayerIndex determines whose turn it is
+ * - No synchronization needed between clients
+ * 
+ * Server Usage:
+ * ```typescript
+ * // Before processing any action:
+ * const turnCheck = validateTurn(gameState, action.playerId);
+ * if (!turnCheck.valid) {
+ *   return error('Not your turn', 403);
+ * }
+ * 
+ * // After action completes successfully:
+ * const result = advanceTurn(gameState);
+ * const newState = result.game; // Now next player's turn
+ * ```
+ * 
+ * Async Safety:
+ * - Turn validation prevents concurrent actions
+ * - Server processes actions sequentially per game
+ * - Players wait for their turn (no time-based advancement)
+ * - State changes are atomic (one turn = one state update)
+ */
+
 import { Game, GamePhase } from '../types/domain';
 
 // ============================================================================

@@ -10,6 +10,107 @@ A rules-accurate, async, server-authoritative digital implementation of the boar
 - **Async-ready** - Supports turn-based play with explicit state transitions
 - **Immutable** - All state updates return new objects
 
+## Async Multiplayer Architecture
+
+This engine is specifically designed for **server-authoritative async multiplayer** games.
+
+### Key Guarantees
+
+1. **Full Serializability**
+   - All game state is JSON-serializable (no functions, classes, or symbols)
+   - Can be stored in any database and transmitted over network
+   - Timestamps are Unix epoch milliseconds (not Date objects)
+
+2. **State Resumability**
+   - Game can be saved at any point and resumed later
+   - No loss of state information
+   - Players can disconnect and reconnect without issues
+
+3. **Deterministic Execution**
+   - Same action + same state = same result (always)
+   - No randomness after initial setup
+   - Reproducible for testing and replay
+
+4. **Atomic State Transitions**
+   - One action = one complete state transition
+   - No partial updates or intermediate states
+   - Failed validations don't modify state
+
+5. **Idempotency Support**
+   - Actions include timestamp for deduplication
+   - Server can detect and reject duplicate submissions
+   - Safe to retry failed requests
+
+### No Race Conditions
+
+- **Turn-based**: Only current player can act (validated server-side)
+- **Sequential processing**: Server handles actions one at a time per game
+- **No timing dependencies**: Turns don't auto-advance or expire
+- **Explicit state**: All game state is in the `Game` object
+
+### Server Integration Pattern
+
+```typescript
+// Typical server endpoint for action submission
+async function handlePlayerAction(gameId: string, action: GameAction) {
+  // 1. Load current state from database
+  const currentState = await db.loadGame(gameId);
+  
+  // 2. Check for duplicate action (idempotency)
+  if (await db.hasAction(action.playerId, action.timestamp)) {
+    return { error: 'Duplicate action' };
+  }
+  
+  // 3. Validate action against current state
+  const validation = validateAction(currentState, action);
+  if (!validation.valid) {
+    return { error: validation.error, code: validation.code };
+  }
+  
+  // 4. Apply action (pure function, no side effects)
+  let newState = applyAction(currentState, action);
+  
+  // 5. Advance turn and check endgame
+  const turnResult = advanceTurn(newState);
+  newState = turnResult.game;
+  
+  if (turnResult.gameFinished) {
+    newState = finalizeGame(newState);
+  }
+  
+  // 6. Save new state atomically
+  await db.saveGame(newState);
+  await db.recordAction(action);
+  
+  // 7. Broadcast to all players
+  await broadcast(gameId, { type: 'STATE_UPDATE', state: newState });
+  
+  return { success: true, state: newState };
+}
+```
+
+### Client-Server Communication
+
+**Client → Server:**
+```json
+{
+  "type": "PLAY_MERCHANT_CARD",
+  "playerId": "alice",
+  "cardId": "m42",
+  "timestamp": 1705584000000
+}
+```
+
+**Server → Clients (broadcast):**
+```json
+{
+  "type": "STATE_UPDATE",
+  "game": { /* complete game state */ }
+}
+```
+
+Clients don't need to maintain game logic - server sends complete state updates.
+
 ## Project Structure
 
 ```
@@ -216,6 +317,68 @@ const game2 = createNewGame(players, 'seed-123');
 - `calculateScore(player)` - Calculate player score
 - `determineWinner(players)` - Determine winner with tiebreaks
 - `getScoreBreakdown(player)` - Get detailed score info
+
+## REST API Wrapper
+
+A complete async-safe REST API is provided in `src/api/`:
+
+```bash
+# Install Express
+npm install express @types/express
+
+# Start server
+npx ts-node -e "
+import { createServer } from './src/api/expressAdapter';
+const server = createServer();
+server.listen(3000, () => console.log('Server on :3000'));
+"
+```
+
+**Endpoints:**
+- `POST /api/games` - Create game
+- `GET /api/games/:id` - Get state
+- `POST /api/games/:id/actions` - Submit action
+
+**Features:**
+- Server-authoritative validation
+- Turn enforcement
+- Idempotency checks
+- Full state persistence
+
+**Documentation:**
+- [API_QUICKREF.md](API_QUICKREF.md) - Quick reference
+- [API_EXAMPLES.md](API_EXAMPLES.md) - Full examples
+- [src/api/README.md](src/api/README.md) - Architecture
+- [P2P_ARCHITECTURE.md](P2P_ARCHITECTURE.md) - Peer-to-peer design
+- [src/p2p/PROTOCOL.md](src/p2p/PROTOCOL.md) - P2P message protocol
+- [src/p2p/STATE_CONSISTENCY.md](src/p2p/STATE_CONSISTENCY.md) - P2P state safeguards
+- [src/p2p/HOST_UI.md](src/p2p/HOST_UI.md) - Host UI responsibilities & adapter pattern
+- [src/p2p/FAILURE_MODES.md](src/p2p/FAILURE_MODES.md) - LAN failure modes & recovery
+- [src/p2p/BROWSER_ROOM.md](src/p2p/BROWSER_ROOM.md) - Browser-only P2P room creation
+- [src/p2p/actionFlow.ts](src/p2p/actionFlow.ts) - Complete action flow examples
+- [CODE_REVIEW.md](CODE_REVIEW.md) - Code quality review
+
+## P2P State Consistency
+
+For LAN multiplayer, the engine includes 4 layers of state consistency safeguards:
+
+1. **Idempotent Message Handling** - Deduplicate messages by messageId
+2. **Turn Number Validation** - Detect stale messages and missed updates
+3. **State Hash Verification** - Detect subtle desyncs via cryptographic hash
+4. **Re-sync Mechanism** - Request full state when mismatch detected
+
+**Golden Rule:** Host state always wins. Clients request full state on any mismatch.
+
+```typescript
+import { ClientStateSyncHandler } from './p2p/stateSync';
+
+// Client automatically handles all safeguards
+const syncHandler = new ClientStateSyncHandler(hostPeerId);
+const result = syncHandler.handleGameState(message);
+// result: 'applied' | 'resync_needed' | 'ignored'
+```
+
+See [src/p2p/STATE_CONSISTENCY.md](src/p2p/STATE_CONSISTENCY.md) for full details.
 
 ## License
 

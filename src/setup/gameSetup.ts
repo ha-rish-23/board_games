@@ -1,3 +1,45 @@
+/**
+ * GAME SETUP - Initial state creation
+ * 
+ * ASYNC MULTIPLAYER SAFETY:
+ * This is the ONLY place where randomness occurs in the entire game.
+ * After setup completes, the game is fully deterministic.
+ * 
+ * Key Properties:
+ * 1. DETERMINISTIC: Same seed + players = identical game state
+ * 2. REPRODUCIBLE: Can recreate exact game for testing/replay
+ * 3. ATOMIC: Setup creates complete initial state in one call
+ * 4. SERIALIZABLE: Resulting state is fully JSON-safe
+ * 5. SEED-BASED: Randomness controlled by seed parameter
+ * 
+ * Why Seeded Randomness:
+ * - Enables game replay/debugging (use same seed)
+ * - Allows fair tournaments (everyone gets same card distribution)
+ * - Server can verify game setup integrity
+ * - Clients can't manipulate randomness
+ * - Tests are reproducible and reliable
+ * 
+ * Async Usage Pattern:
+ * ```typescript
+ * // Server creates new game:
+ * const seed = generateSecureSeed(); // e.g., UUID or timestamp
+ * const players = [{id: 'p1', name: 'Alice'}, {id: 'p2', name: 'Bob'}];
+ * const initialState = createNewGame(players, seed);
+ * 
+ * // Save to database:
+ * await saveGameState(initialState);
+ * 
+ * // Broadcast to all players:
+ * await notifyPlayers(initialState.players, initialState);
+ * ```
+ * 
+ * After Setup:
+ * - All randomness is exhausted (cards shuffled, coins placed)
+ * - Game proceeds deterministically based on player actions
+ * - No more random events (dice, draws from shuffled deck are deterministic)
+ * - State can be saved/loaded/replayed without randomness concerns
+ */
+
 import {
   Game,
   Player,

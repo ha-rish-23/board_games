@@ -1,3 +1,47 @@
+/**
+ * ENDGAME SYSTEM - Game completion and scoring
+ * 
+ * ASYNC MULTIPLAYER SAFETY:
+ * This module handles game ending conditions and final scoring.
+ * All calculations are deterministic and based on game state only.
+ * 
+ * Key Properties:
+ * 1. DETERMINISTIC: Scoring is purely mathematical (no randomness)
+ * 2. STATELESS: Only depends on game state, no external data
+ * 3. FAIR: Tiebreaker rules ensure clear winner
+ * 4. TRANSPARENT: All scoring rules visible in code
+ * 5. FINAL: Game phase = Finished means no more actions accepted
+ * 
+ * Endgame Flow:
+ * 1. Player claims N-th point card -> endgame triggered
+ * 2. All other players get one final turn
+ * 3. finalizeGame() calculates scores and determines winner
+ * 4. Game phase set to Finished
+ * 5. No more actions accepted (validation will reject)
+ * 
+ * Async Safety:
+ * - Endgame detection happens during state transition
+ * - Server tracks endGameTriggered flag
+ * - Final turn enforcement via turnNumber comparison
+ * - Winner determination is pure calculation
+ * - Once Finished, state is immutable (validation rejects actions)
+ * 
+ * Server Usage:
+ * ```typescript
+ * // After applying ClaimPoint action:
+ * const trigger = checkEndGameTrigger(newState);
+ * if (trigger.triggered && !newState.endGameTriggered) {
+ *   newState.endGameTriggered = true;
+ *   newState.endGameTriggerPlayerIndex = trigger.playerIndex;
+ * }
+ * 
+ * // After each turn in endgame:
+ * if (isInFinalRound(newState) && nextPlayerIsTriggerer) {
+ *   newState = finalizeGame(newState);
+ * }
+ * ```
+ */
+
 import { Game, Player, CrystalColor } from '../types/domain';
 
 // ============================================================================

@@ -62,7 +62,28 @@ export enum ValidationErrorCode {
  * Validates any game action against the current game state.
  * Routes to specific validator based on action type.
  * 
- * @param game - Current game state
+ * ASYNC MULTIPLAYER SAFETY:
+ * - PURE FUNCTION: No side effects, reads game state only
+ * - DETERMINISTIC: Same state + action = same result always
+ * - THREAD-SAFE: Can be called concurrently for different games
+ * - FAST: Returns immediately without async operations
+ * 
+ * Server should call this BEFORE applying action:
+ * ```
+ * const validation = validateAction(currentState, clientAction);
+ * if (!validation.valid) {
+ *   return error(validation.error, validation.code);
+ * }
+ * const newState = applyAction(currentState, clientAction);
+ * await saveGameState(newState);
+ * ```
+ * 
+ * This ensures:
+ * - Invalid actions never corrupt game state
+ * - Clients get immediate feedback on action legality
+ * - Server maintains single source of truth
+ * 
+ * @param game - Current game state (not modified)
  * @param action - Action to validate
  * @returns Validation result with error details if invalid
  */

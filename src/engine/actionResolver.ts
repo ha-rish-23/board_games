@@ -1,3 +1,53 @@
+/**
+ * ACTION RESOLUTION LAYER
+ * 
+ * ASYNC MULTIPLAYER SAFETY:
+ * This layer applies validated actions to produce new game states.
+ * All functions are PURE - no side effects, no mutations, no I/O.
+ * 
+ * Key Properties:
+ * 1. IMMUTABILITY: Never modifies input state, always returns new state
+ * 2. DETERMINISM: Same action + state = same new state (always)
+ * 3. PURE FUNCTIONS: No side effects, external calls, or randomness
+ * 4. ATOMIC: Each function is a single state transition
+ * 5. RESUMABLE: Can apply actions to any saved state snapshot
+ * 
+ * State Transition Model:
+ * ```
+ * oldState + action -> newState
+ * ```
+ * 
+ * Server Usage Pattern:
+ * ```typescript
+ * // 1. Load state from database
+ * const currentState = await loadGameState(gameId);
+ * 
+ * // 2. Validate action (validation.ts)
+ * const validation = validateAction(currentState, action);
+ * if (!validation.valid) return error(validation.error);
+ * 
+ * // 3. Apply action (this file)
+ * const newState = applyAction(currentState, action);
+ * 
+ * // 4. Save new state
+ * await saveGameState(newState);
+ * 
+ * // 5. Broadcast to all players
+ * await broadcastStateUpdate(gameId, newState);
+ * ```
+ * 
+ * No Race Conditions:
+ * - Server processes actions sequentially per game
+ * - Each action sees consistent state snapshot
+ * - State updates are atomic (old state -> new state)
+ * - Failed validations don't reach this layer
+ * 
+ * Idempotency:
+ * - Apply same action twice to different states = different results
+ * - BUT: Server can prevent duplicate actions via timestamp deduplication
+ * - Action resolution itself is deterministic, not idempotent
+ */
+
 import {
   Game,
   GameAction,
@@ -24,7 +74,20 @@ import {
  * IMPORTANT: This function assumes the action has already been validated.
  * It does NOT perform validation - use validateAction() first.
  * 
- * @param game - Current game state
+ * ASYNC MULTIPLAYER GUARANTEES:
+ * - PURE: No side effects, mutations, or I/O operations
+ * - DETERMINISTIC: Same inputs always produce same output
+ * - IMMUTABLE: Original game state is never modified
+ * - ATOMIC: Complete state transition in one function call
+ * - FAST: Synchronous, no async operations or delays
+ * 
+ * State Transition Properties:
+ * - Creates new Game object with all changes applied
+ * - Updates `updatedAt` timestamp to current time
+ * - Preserves all unchanged state (deep copy for modified parts)
+ * - Returns valid serializable state ready for storage/broadcast
+ * 
+ * @param game - Current game state (not modified)
  * @param action - Validated action to apply
  * @returns New game state with action effects applied
  */
