@@ -170,7 +170,7 @@ async function handleCreateRoom(event: Event) {
     gameRoom.on('game-state-updated', (game) => {
       // Host also sees game updates
       const gameArea = document.getElementById('game-area');
-      if (gameArea && game.phase !== 'SETUP') {
+      if (gameArea && game.phase === 'PLAYING') {
         gameArea.style.display = 'block';
         
         // Set host identity on first game state

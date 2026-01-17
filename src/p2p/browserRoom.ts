@@ -226,13 +226,9 @@ export class P2PGameRoom {
   private async initializePeerHost(): Promise<void> {
     return new Promise((resolve, reject) => {
       // Create peer with explicit ID
+      // Use default PeerJS cloud server (omit config to use defaults)
       this.peer = new Peer(this.hostPeerId, {
-        debug: 2, // Debug level (0=none, 3=all)
-        // Use default PeerJS cloud server - requires internet
-        host: '0.peerjs.com',
-        port: 443,
-        path: '/',
-        secure: true
+        debug: 2 // Debug level (0=none, 3=all)
       });
       
       this.peer.on('open', (id: string) => {

@@ -225,13 +225,9 @@ export class P2PGameClient {
    */
   private async initializePeerClient(): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Use default PeerJS cloud server (omit config to use defaults)
       this.peer = new Peer(this.clientPeerId, {
-        debug: 2,
-        // Use default PeerJS cloud server - requires internet
-        host: '0.peerjs.com',
-        port: 443,
-        path: '/',
-        secure: true
+        debug: 2
       });
       
       this.peer.on('open', (id: string) => {

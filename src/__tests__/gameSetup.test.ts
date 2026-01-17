@@ -18,7 +18,7 @@ describe('Game Setup Tests', () => {
     const game = createNewGame(players, 'test-seed-1');
     
     assertEqual(game.players.length, 2, 'Should have 2 players');
-    assertEqual(game.phase, GamePhase.Playing, 'Should be in Playing phase');
+    assertEqual(game.phase, GamePhase.Setup, 'Should start in Setup phase');
     assertEqual(game.currentPlayerIndex, 0, 'First player should be current');
     assertEqual(game.turnNumber, 1, 'Should start at turn 1');
     assert(!game.endGameTriggered, 'End game should not be triggered');
