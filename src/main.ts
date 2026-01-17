@@ -8,22 +8,21 @@
 import './main.css';
 import { P2PGameRoom } from './p2p/browserRoom';
 import { P2PGameClient } from './p2p/browserClient';
+import { ActionType, GameAction } from './types/domain';
 
 // Global instances
 let gameRoom: P2PGameRoom | null = null;
 let gameClient: P2PGameClient | null = null;
+let currentPlayerId: string = '';
 
 // Main application initialization
 function initApp() {
-  console.log('initApp called');
   const app = document.getElementById('app');
   
   if (!app) {
     console.error('App mount point not found');
     return;
   }
-  
-  console.log('App element found, rendering UI...');
   
   // Render UI
   app.innerHTML = `
@@ -75,14 +74,21 @@ function initApp() {
       
       <div id="game-area" style="display:none;">
         <h2>Game in Progress</h2>
-        <div id="game-status"></div>
+        <div id="game-status" style="margin-bottom: 20px;"></div>
+        
+        <div id="game-actions" style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn-primary" id="action-play-card">Play Card</button>
+          <button class="btn-primary" id="action-take-merchant">Take Merchant Card</button>
+          <button class="btn-primary" id="action-claim-vp">Claim Victory Points</button>
+          <button class="btn-primary" id="action-rest">Rest (Take All Cards)</button>
+        </div>
+        
+        <div id="action-result" style="margin-top: 20px; padding: 10px; border-radius: 4px; display:none;"></div>
       </div>
     </div>
   `;
   
-  console.log('UI rendered, setting up listeners...');
   setupEventListeners();
-  console.log('App initialized successfully!');
 }
 
 function setupEventListeners() {
@@ -104,6 +110,12 @@ function setupEventListeners() {
   // Join room form
   const joinForm = document.getElementById('join-form');
   joinForm?.addEventListener('submit', handleJoinRoom);
+  
+  // Game action buttons
+  document.getElementById('action-play-card')?.addEventListener('click', () => handleGameAction('play-card'));
+  document.getElementById('action-take-merchant')?.addEventListener('click', () => handleGameAction('take-merchant'));
+  document.getElementById('action-claim-vp')?.addEventListener('click', () => handleGameAction('claim-vp'));
+  document.getElementById('action-rest')?.addEventListener('click', () => handleGameAction('rest'));
 }
 
 function switchTab(tabName: string) {
@@ -136,15 +148,30 @@ async function handleCreateRoom(event: Event) {
     
     // Set up event listeners
     gameRoom.on('room-created', ({ roomCode, hostPeerId }) => {
-      console.log('Room created:', roomCode, hostPeerId);
       codeDisplay.textContent = roomCode;
       peerDisplay.textContent = hostPeerId;
       roomInfo.style.display = 'block';
     });
     
     gameRoom.on('peer-connected', ({ peerId, playerName }) => {
-      console.log('Peer connected:', peerId, playerName);
       alert(`Player ${playerName} joined the room!`);
+    });
+    
+    gameRoom.on('game-state-updated', (game) => {
+      // Host also sees game updates
+      const gameArea = document.getElementById('game-area');
+      if (gameArea && game.phase !== 'SETUP') {
+        gameArea.style.display = 'block';
+        updateGameUI(game);
+      }
+    });
+    
+    gameRoom.on('action-processed', (action, success) => {
+      if (success) {
+        showActionResult('Action processed successfully', 'success');
+      } else {
+        showActionResult('Action processing failed', 'error');
+      }
     });
     
     gameRoom.on('room-error', (error: Error) => {
@@ -182,7 +209,6 @@ async function handleJoinRoom(event: Event) {
     
     // Set up event listeners
     gameClient.on('connected', () => {
-      console.log('Connected to room');
       alert(`Successfully joined room ${roomCode}!`);
       // Hide forms, show game area
       document.getElementById('create-tab')!.style.display = 'none';
@@ -195,16 +221,19 @@ async function handleJoinRoom(event: Event) {
     });
     
     gameClient.on('disconnected', () => {
-      console.log('Disconnected from room');
       alert('Disconnected from room');
     });
     
     gameClient.on('game-state-received', (game) => {
-      console.log('Game state received:', game);
-      const statusEl = document.getElementById('game-status');
-      if (statusEl) {
-        statusEl.textContent = `Game Turn: ${game.turnNumber} | Phase: ${game.phase}`;
-      }
+      updateGameUI(game);
+    });
+    
+    gameClient.on('action-accepted', (action) => {
+      showActionResult('Action accepted! Waiting for state update...', 'success');
+    });
+    
+    gameClient.on('action-rejected', (action, error) => {
+      showActionResult(`Action rejected: ${error}`, 'error');
     });
     
     gameClient.on('error', (error: Error) => {
@@ -212,12 +241,11 @@ async function handleJoinRoom(event: Event) {
       alert(`Error: ${error.message}`);
     });
     
-    // Generate player ID
-    const playerId = `player_${Date.now()}`;
+    // Generate player ID and store it
+    currentPlayerId = `player_${Date.now()}`;
     
     // Join room
-    console.log('Joining room:', { roomCode, hostPeerId, playerId, playerName });
-    await gameClient.joinRoomWithPeerId(roomCode, hostPeerId, playerId, playerName);
+    await gameClient.joinRoomWithPeerId(roomCode, hostPeerId, currentPlayerId, playerName);
     
   } catch (error) {
     console.error('Failed to join room:', error);
@@ -234,16 +262,113 @@ function generateRoomCode(): string {
   return code;
 }
 
-// Initialize when DOM is ready
-console.log('Script loaded, readyState:', document.readyState);
+// Game action handler
+async function handleGameAction(actionType: string) {
+  if (!gameClient) {
+    showActionResult('Not connected to a room', 'error');
+    return;
+  }
+  
+  if (!currentPlayerId) {
+    showActionResult('Player ID not set', 'error');
+    return;
+  }
+  
+  try {
+    let action: GameAction;
+    
+    switch (actionType) {
+      case 'rest':
+        action = {
+          type: ActionType.Rest,
+          playerId: currentPlayerId,
+          timestamp: Date.now()
+        };
+        break;
+        
+      case 'play-card':
+        // For demo: play first card in hand
+        showActionResult('Select a card to play (UI not implemented)', 'error');
+        return;
+        
+      case 'take-merchant':
+        // For demo: take first available merchant card
+        showActionResult('Select a merchant card (UI not implemented)', 'error');
+        return;
+        
+      case 'claim-vp':
+        // For demo: claim first available victory point card
+        showActionResult('Select a victory point card (UI not implemented)', 'error');
+        return;
+        
+      default:
+        showActionResult('Unknown action type', 'error');
+        return;
+    }
+    
+    // Send action to host via P2P
+    showActionResult('Sending action to host...', 'info');
+    await gameClient.sendAction(action);
+    
+  } catch (error) {
+    showActionResult(`Failed to send action: ${(error as Error).message}`, 'error');
+  }
+}
 
-if (document.readyState === 'loading') {
-  console.log('Waiting for DOMContentLoaded...');
-  document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded fired');
-    initApp();
+// Update UI with game state
+function updateGameUI(game: any) {
+  const statusEl = document.getElementById('game-status');
+  if (statusEl) {
+    const currentPlayer = game.players[game.currentPlayerIndex];
+    const isMyTurn = currentPlayer?.id === currentPlayerId;
+    
+    statusEl.innerHTML = `
+      <div><strong>Turn:</strong> ${game.turnNumber} | <strong>Phase:</strong> ${game.phase}</div>
+      <div><strong>Current Player:</strong> ${currentPlayer?.name || 'Unknown'} ${isMyTurn ? '(YOUR TURN)' : ''}</div>
+      <div><strong>Players:</strong> ${game.players.length}</div>
+    `;
+  }
+  
+  // Enable/disable action buttons based on turn
+  const isMyTurn = game.players[game.currentPlayerIndex]?.id === currentPlayerId;
+  const actionButtons = document.querySelectorAll('#game-actions button');
+  actionButtons.forEach((btn: any) => {
+    btn.disabled = !isMyTurn;
+    btn.style.opacity = isMyTurn ? '1' : '0.5';
   });
+}
+
+// Show action result feedback
+function showActionResult(message: string, type: 'success' | 'error' | 'info') {
+  const resultEl = document.getElementById('action-result');
+  if (!resultEl) return;
+  
+  resultEl.textContent = message;
+  resultEl.style.display = 'block';
+  
+  // Color coding
+  if (type === 'success') {
+    resultEl.style.backgroundColor = '#4caf50';
+    resultEl.style.color = 'white';
+  } else if (type === 'error') {
+    resultEl.style.backgroundColor = '#f44336';
+    resultEl.style.color = 'white';
+  } else {
+    resultEl.style.backgroundColor = '#2196f3';
+    resultEl.style.color = 'white';
+  }
+  
+  // Auto-hide after 5 seconds
+  setTimeout(() => {
+    if (resultEl) {
+      resultEl.style.display = 'none';
+    }
+  }, 5000);
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
 } else {
-  console.log('DOM already ready, initializing...');
   initApp();
 }
