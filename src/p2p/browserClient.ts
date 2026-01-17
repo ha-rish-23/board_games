@@ -159,7 +159,7 @@ export class P2PGameClient {
     roomCode: string,
     playerId: string,
     playerName: string,
-    timeout: number = 30000
+    timeout: number = 60000
   ): Promise<ClientRoomInfo> {
     if (this.connected || this.connecting) {
       throw new Error('Already connected or connecting to a room');
@@ -306,11 +306,13 @@ export class P2PGameClient {
       console.log('[Client] Connecting to host:', this.hostPeerId);
       
       const timeoutTimer = setTimeout(() => {
-        reject(new Error('Connection timeout'));
+        this.hostConnection?.close();
+        reject(new Error('Connection timeout. Make sure you and the host are on the same network (WiFi). Check that the Host Peer ID is correct.'));
       }, timeout);
       
       this.hostConnection = this.peer!.connect(this.hostPeerId, {
-        reliable: true
+        reliable: true,
+        serialization: 'json'
       });
       
       this.hostConnection.on('open', () => {
@@ -323,7 +325,7 @@ export class P2PGameClient {
       this.hostConnection.on('error', (err: Error) => {
         clearTimeout(timeoutTimer);
         console.error('[Client] Connection error:', err);
-        reject(err);
+        reject(new Error(`Connection failed: ${err.message}. Ensure you're on the same network as the host.`));
       });
     });
   }
@@ -801,7 +803,7 @@ export class P2PGameClient {
     hostPeerId: string,
     playerId: string,
     playerName: string,
-    timeout: number = 30000
+    timeout: number = 60000
   ): Promise<ClientRoomInfo> {
     // Cache the peer ID for future connections
     this.cacheHostPeerId(roomCode, hostPeerId);
