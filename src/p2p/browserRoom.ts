@@ -227,18 +227,22 @@ export class P2PGameRoom {
     return new Promise((resolve, reject) => {
       // Set a timeout for initialization
       const timeout = setTimeout(() => {
-        reject(new Error('PeerJS initialization timeout. Check your internet connection.'));
-      }, 10000); // 10 second timeout
+        if (this.peer) {
+          this.peer.destroy();
+        }
+        reject(new Error('PeerJS initialization timeout (10s). Please check your internet connection and try again.'));
+      }, 10000);
       
-      // Create peer with explicit ID
-      // Try peerjs.com server
-      this.peer = new Peer(this.hostPeerId, {
-        debug: 2, // Debug level (0=none, 3=all)
-        host: 'peerjs.com',
-        port: 443,
-        path: '/',
-        secure: true
-      });
+      // Create peer - use default cloud server for maximum compatibility
+      try {
+        this.peer = new Peer(this.hostPeerId, {
+          debug: 2
+        });
+      } catch (err) {
+        clearTimeout(timeout);
+        reject(new Error(`Failed to create Peer: ${err}`));
+        return;
+      }
       
       this.peer.on('open', (id: string) => {
         clearTimeout(timeout);
@@ -248,10 +252,11 @@ export class P2PGameRoom {
         resolve();
       });
       
-      this.peer.on('error', (err: Error) => {
+      this.peer.on('error', (err: any) => {
         clearTimeout(timeout);
         console.error('[Room] PeerJS error:', err);
-        reject(new Error(`Failed to connect to signaling server: ${err.message}`));
+        const errorMsg = err.type ? `${err.type}: ${err.message || err}` : String(err);
+        reject(new Error(`Signaling server error: ${errorMsg}. Try refreshing the page.`));
       });
       
       // Connection listener
