@@ -74,13 +74,23 @@ function initApp() {
       
       <div id="game-area" style="display:none;">
         <h2>Game in Progress</h2>
-        <div id="game-status" style="margin-bottom: 20px;"></div>
+        
+        <div id="player-identity" style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+          <strong>You are:</strong> <span id="your-player-name"></span>
+          <span id="host-indicator" style="margin-left: 10px; display:none;">(HOST)</span>
+        </div>
+        
+        <div id="turn-status" style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px; font-size: 1.1em;">
+          <strong id="turn-message">Waiting...</strong>
+        </div>
+        
+        <div id="game-status" style="margin-bottom: 20px; font-size: 0.9em; opacity: 0.8;"></div>
         
         <div id="game-actions" style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn-primary" id="action-play-card">Play Card</button>
-          <button class="btn-primary" id="action-take-merchant">Take Merchant Card</button>
-          <button class="btn-primary" id="action-claim-vp">Claim Victory Points</button>
-          <button class="btn-primary" id="action-rest">Rest (Take All Cards)</button>
+          <button class="btn-primary" id="action-play-card" disabled>Play Card</button>
+          <button class="btn-primary" id="action-take-merchant" disabled>Take Merchant Card</button>
+          <button class="btn-primary" id="action-claim-vp" disabled>Claim Victory Points</button>
+          <button class="btn-primary" id="action-rest" disabled>Rest (Take All Cards)</button>
         </div>
         
         <div id="action-result" style="margin-top: 20px; padding: 10px; border-radius: 4px; display:none;"></div>
@@ -162,6 +172,20 @@ async function handleCreateRoom(event: Event) {
       const gameArea = document.getElementById('game-area');
       if (gameArea && game.phase !== 'SETUP') {
         gameArea.style.display = 'block';
+        
+        // Set host identity on first game state
+        if (!currentPlayerId) {
+          currentPlayerId = game.players[0].id; // Host is first player
+          const playerNameEl = document.getElementById('your-player-name');
+          if (playerNameEl) {
+            playerNameEl.textContent = game.players[0].name;
+          }
+          const hostIndicator = document.getElementById('host-indicator');
+          if (hostIndicator) {
+            hostIndicator.style.display = 'inline';
+          }
+        }
+        
         updateGameUI(game);
       }
     });
@@ -216,12 +240,31 @@ async function handleJoinRoom(event: Event) {
       const gameArea = document.getElementById('game-area');
       if (gameArea) {
         gameArea.style.display = 'block';
-        document.getElementById('game-status')!.textContent = `Connected as ${playerName}`;
+        // Set player identity
+        const playerNameEl = document.getElementById('your-player-name');
+        if (playerNameEl) {
+          playerNameEl.textContent = playerName;
+        }
       }
     });
     
     gameClient.on('disconnected', () => {
-      alert('Disconnected from room');
+      showActionResult('Disconnected from room', 'error');
+    });
+    
+    gameClient.on('host-disconnected', () => {
+      const gameArea = document.getElementById('game-area');
+      if (gameArea) {
+        gameArea.innerHTML = `
+          <h2>Game Ended</h2>
+          <p style="padding: 20px; background: rgba(244, 67, 54, 0.2); border-radius: 8px;">
+            <strong>Host disconnected.</strong><br><br>
+            The host has closed their browser or lost connection.<br>
+            The game cannot continue without the host.<br><br>
+            Please refresh to start a new game.
+          </p>
+        `;
+      }
     });
     
     gameClient.on('game-state-received', (game) => {
@@ -307,7 +350,7 @@ async function handleGameAction(actionType: string) {
     }
     
     // Send action to host via P2P
-    showActionResult('Sending action to host...', 'info');
+    showActionResult('Waiting for host...', 'info');
     await gameClient.sendAction(action);
     
   } catch (error) {
@@ -317,25 +360,41 @@ async function handleGameAction(actionType: string) {
 
 // Update UI with game state
 function updateGameUI(game: any) {
+  const currentPlayer = game.players[game.currentPlayerIndex];
+  const isMyTurn = currentPlayer?.id === currentPlayerId;
+  const myPlayer = game.players.find((p: any) => p.id === currentPlayerId);
+  
+  // Update turn status message
+  const turnMessage = document.getElementById('turn-message');
+  if (turnMessage) {
+    if (isMyTurn) {
+      turnMessage.textContent = 'Your turn';
+      turnMessage.style.color = '#4caf50';
+    } else {
+      turnMessage.textContent = `Waiting for ${currentPlayer?.name || 'Unknown'}`;
+      turnMessage.style.color = '#ff9800';
+    }
+  }
+  
+  // Update game status details
   const statusEl = document.getElementById('game-status');
   if (statusEl) {
-    const currentPlayer = game.players[game.currentPlayerIndex];
-    const isMyTurn = currentPlayer?.id === currentPlayerId;
-    
-    statusEl.innerHTML = `
-      <div><strong>Turn:</strong> ${game.turnNumber} | <strong>Phase:</strong> ${game.phase}</div>
-      <div><strong>Current Player:</strong> ${currentPlayer?.name || 'Unknown'} ${isMyTurn ? '(YOUR TURN)' : ''}</div>
-      <div><strong>Players:</strong> ${game.players.length}</div>
-    `;
+    statusEl.textContent = `Turn ${game.turnNumber} • ${game.phase} • ${game.players.length} players`;
   }
   
   // Enable/disable action buttons based on turn
-  const isMyTurn = game.players[game.currentPlayerIndex]?.id === currentPlayerId;
   const actionButtons = document.querySelectorAll('#game-actions button');
   actionButtons.forEach((btn: any) => {
     btn.disabled = !isMyTurn;
     btn.style.opacity = isMyTurn ? '1' : '0.5';
+    btn.style.cursor = isMyTurn ? 'pointer' : 'not-allowed';
   });
+  
+  // Hide action feedback when state updates
+  const actionResult = document.getElementById('action-result');
+  if (actionResult && actionResult.textContent.includes('Waiting for host')) {
+    actionResult.style.display = 'none';
+  }
 }
 
 // Show action result feedback

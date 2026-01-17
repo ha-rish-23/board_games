@@ -1,20 +1,63 @@
-# Century: Golem Edition - Game Engine
+# Century: Golem Edition - P2P Multiplayer Game
 
-A rules-accurate, async, server-authoritative digital implementation of the board game Century: Golem Edition (2024).
+A browser-based peer-to-peer multiplayer implementation of Century: Golem Edition.
 
-## Architecture
+**Status**: v1.0 LAN Release
 
-- **Pure TypeScript** - No UI, no dependencies, fully testable
-- **Server-authoritative** - All validation happens server-side
-- **Deterministic** - Same seed = same game state
-- **Async-ready** - Supports turn-based play with explicit state transitions
-- **Immutable** - All state updates return new objects
+## Play Now
 
-## Async Multiplayer Architecture
+Visit: https://ha-rish-23.github.io/board_games/
 
-This engine is specifically designed for **server-authoritative async multiplayer** games.
+## Features
 
-### Key Guarantees
+- **No Server Required** - Pure peer-to-peer using WebRTC
+- **LAN/Local Network Play** - Works on same WiFi or local network
+- **Host-Authoritative** - Host validates all actions via game engine
+- **Real-time Sync** - State updates broadcast to all players
+- **Turn-based Gameplay** - Clear turn indicators and action validation
+
+## Requirements
+
+- Modern browser (Chrome, Firefox, Edge, Safari)
+- Same local network (LAN/WiFi) for all players
+- One player must be designated as host
+- **Host must stay online** - Game ends if host disconnects
+
+## How to Play
+
+### Host (Create Room)
+
+1. Click "Create Room"
+2. Select number of players (2-5)
+3. Share the **Room Code** and **Host Peer ID** with other players
+4. Wait for players to join
+5. **Keep your browser tab open** - You are the game host
+
+### Client (Join Room)
+
+1. Get Room Code and Host Peer ID from host
+2. Click "Join Room"
+3. Enter Room Code, Host Peer ID, and your name
+4. Click "Join Room"
+5. Wait for game to start
+
+### During Game
+
+- **Green status** = Your turn (action buttons enabled)
+- **Orange status** = Waiting for another player
+- **Action buttons** are only enabled on your turn
+- **Host indicator** shows who is hosting the game
+
+## Known Limitations
+
+- **LAN Only** - Players must be on same network
+- **Host Dependency** - Host must remain online for entire game
+- **No Host Migration** - If host disconnects, game ends
+- **No Reconnection** - If you refresh, you must rejoin as new player
+- **No Save/Load** - Games cannot be saved or resumed
+- **No Spectator Mode** - Only players in initial setup can play
+
+## Technical Architecture
 
 1. **Full Serializability**
    - All game state is JSON-serializable (no functions, classes, or symbols)

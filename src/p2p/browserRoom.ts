@@ -120,6 +120,7 @@ export class P2PGameRoom {
   private deduplicator: MessageDeduplicator;
   private autoSkipTimers: Map<string, NodeJS.Timeout> = new Map();
   private readonly PEER_RECONNECT_GRACE_PERIOD = 15000; // 15 seconds
+  private isProcessingAction: boolean = false; // Race condition protection
   
   // Events
   private eventListeners: Map<keyof RoomEventMap, Set<Function>> = new Map();
@@ -180,7 +181,6 @@ export class P2PGameRoom {
         gamePhase: this.game.phase
       };
       
-      console.log('[Room] Created successfully:', roomInfo);
       this.emit('room-created', roomInfo);
       
       // Step 6: Save room info in browser storage
@@ -233,7 +233,6 @@ export class P2PGameRoom {
       });
       
       this.peer.on('open', (id: string) => {
-        console.log('[Room] PeerJS host initialized:', id);
         this.setupPeerListeners();
         resolve();
       });
@@ -245,7 +244,6 @@ export class P2PGameRoom {
       
       // Connection listener
       this.peer.on('connection', (conn: DataConnection) => {
-        console.log('[Room] Incoming connection from:', conn.peer);
         this.handleIncomingConnection(conn);
       });
       
@@ -278,8 +276,6 @@ export class P2PGameRoom {
         `p2p_room_${this.roomCode}`,
         JSON.stringify(roomData)
       );
-      
-      console.log('[Room] Saved to localStorage');
     } catch (err) {
       console.warn('[Room] Failed to save to localStorage:', err);
     }
@@ -301,7 +297,6 @@ export class P2PGameRoom {
     
     // Wait for connection to open
     conn.on('open', () => {
-      console.log('[Room] Connection opened:', conn.peer);
       this.connectedPeers.set(conn.peer, conn);
       this.setupConnectionListeners(conn);
     });
@@ -322,7 +317,6 @@ export class P2PGameRoom {
     
     // Handle disconnect
     conn.on('close', () => {
-      console.log('[Room] Peer disconnected:', conn.peer);
       this.handlePeerDisconnect(conn.peer);
     });
     
@@ -337,11 +331,8 @@ export class P2PGameRoom {
   private handlePeerMessage(message: P2PMessage, peerId: string): void {
     // Idempotency check (Layer 1)
     if (!this.deduplicator.shouldProcess(message)) {
-      console.log('[Room] Ignoring duplicate message:', message.messageId);
       return;
     }
-    
-    console.log('[Room] Received message:', message.type, 'from', peerId);
     
     switch (message.type) {
       case P2PMessageType.JoinGame:
@@ -375,8 +366,6 @@ export class P2PGameRoom {
       this.sendError(peerId, 'GAME_NOT_FOUND', 'Game not initialized');
       return;
     }
-    
-    console.log('[Room] Join request from:', msg.playerName, '(peer:', peerId, ')');
     
     // Check if game already started
     if (this.game.phase !== GamePhase.Setup) {
@@ -420,7 +409,6 @@ export class P2PGameRoom {
     
     this.playerConnections.set(msg.playerId, playerInfo);
     
-    console.log('[Room] Player joined:', playerInfo.playerName);
     this.emit('peer-connected', playerInfo);
     
     // Send current game state
@@ -434,8 +422,6 @@ export class P2PGameRoom {
    * Handle observer join (read-only).
    */
   private handleObserverJoin(msg: JoinGameMessage, peerId: string): void {
-    console.log('[Room] Adding observer:', msg.playerName);
-    
     this.observers.add(peerId);
     
     // Send current state (read-only)
@@ -469,7 +455,13 @@ export class P2PGameRoom {
       return;
     }
     
-    console.log('[Room] Action request:', msg.action.type, 'from peer:', peerId);
+    // Race condition protection: Only process one action at a time
+    if (this.isProcessingAction) {
+      this.sendActionResult(peerId, msg.messageId, false, 'Host is processing another action. Please wait.');
+      return;
+    }
+    
+    this.isProcessingAction = true;
     
     // Process action via engine (NO GAME LOGIC HERE)
     const result = this.processAction(msg.action);
@@ -481,6 +473,9 @@ export class P2PGameRoom {
       result.valid,
       result.error
     );
+    
+    // Release lock
+    this.isProcessingAction = false;
     
     // Emit event
     this.emit('action-processed', msg.action, result.valid);
@@ -496,13 +491,14 @@ export class P2PGameRoom {
     code?: string;
   } {
     if (!this.game) {
+      this.isProcessingAction = false; // Release lock on early return
       return { valid: false, error: 'Game not initialized' };
     }
     
     // Step 1: Validate via engine
     const validation = validateAction(this.game, action);
     if (!validation.valid) {
-      console.log('[Room] Action rejected:', validation.error);
+      this.isProcessingAction = false; // Release lock on validation failure
       return {
         valid: false,
         error: validation.error,
@@ -520,7 +516,6 @@ export class P2PGameRoom {
     // Step 4: Check endgame via engine
     if (turnResult.gameFinished) {
       newGame = finalizeGame(newGame);
-      console.log('[Room] Game finished!');
     }
     
     // Step 5: Update authoritative state
@@ -535,7 +530,6 @@ export class P2PGameRoom {
     // Step 7: Emit to local UI
     this.emit('game-state-updated', newGame);
     
-    console.log('[Room] Action applied. New turn:', newGame.turnNumber);
     return { valid: true };
   }
   
@@ -620,7 +614,6 @@ export class P2PGameRoom {
     });
     
     if (disconnectedPlayer) {
-      console.log('[Room] Player disconnected:', disconnectedPlayer.playerName);
       this.emit('peer-disconnected', peerId, disconnectedPlayer.playerName);
       
       // Check if it's their turn
