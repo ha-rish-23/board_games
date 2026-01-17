@@ -225,13 +225,23 @@ export class P2PGameRoom {
    */
   private async initializePeerHost(): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Set a timeout for initialization
+      const timeout = setTimeout(() => {
+        reject(new Error('PeerJS initialization timeout. Check your internet connection.'));
+      }, 10000); // 10 second timeout
+      
       // Create peer with explicit ID
-      // Use default PeerJS cloud server (omit config to use defaults)
+      // Try peerjs.com server
       this.peer = new Peer(this.hostPeerId, {
-        debug: 2 // Debug level (0=none, 3=all)
+        debug: 2, // Debug level (0=none, 3=all)
+        host: 'peerjs.com',
+        port: 443,
+        path: '/',
+        secure: true
       });
       
       this.peer.on('open', (id: string) => {
+        clearTimeout(timeout);
         console.log('[Room] PeerJS host initialized:', id);
         console.log('[Room] Connected to signaling server');
         this.setupPeerListeners();
@@ -239,6 +249,7 @@ export class P2PGameRoom {
       });
       
       this.peer.on('error', (err: Error) => {
+        clearTimeout(timeout);
         console.error('[Room] PeerJS error:', err);
         reject(new Error(`Failed to connect to signaling server: ${err.message}`));
       });
