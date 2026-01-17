@@ -417,6 +417,12 @@ export class P2PGameRoom {
     
     this.emit('peer-connected', playerInfo);
     
+    // Check if all players connected - if so, start the game
+    if (this.game.phase === GamePhase.Setup && this.playerConnections.size === this.game.players.length) {
+      this.game.phase = GamePhase.Playing;
+      console.log('[Room] All players connected - game starting!');
+    }
+    
     // Send current game state
     this.sendGameState(peerId, 'INITIAL_SYNC');
     

@@ -648,10 +648,11 @@ export function createNewGame(players: PlayerInput[], seed: string): Game {
   };
 
   // Create complete game state
+  // Note: Start in Setup phase - host will transition to Playing when all players connected
   const now = Date.now();
   const game: Game = {
     id: `game-${now}-${seed.substring(0, 8)}`,
-    phase: GamePhase.Playing,
+    phase: GamePhase.Setup,
     players: gamePlayers,
     currentPlayerIndex: 0,
     merchantDeck: remainingMerchantDeck,
