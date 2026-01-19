@@ -85,25 +85,30 @@ function initApp() {
       <div id="game-area" style="display:none;">
         <h2>Game in Progress</h2>
         
-        <div id="player-identity" style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+        <div id="player-identity" class="info-panel">
           <strong>You are:</strong> <span id="your-player-name"></span>
-          <span id="host-indicator" style="margin-left: 10px; display:none;">(HOST)</span>
+          <span id="host-indicator" style="display:none;" class="badge-host">HOST</span>
         </div>
         
-        <div id="turn-status" style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px; font-size: 1.1em;">
+        <div id="turn-status" class="info-panel turn-indicator">
           <strong id="turn-message">Waiting...</strong>
         </div>
         
-        <div id="game-status" style="margin-bottom: 20px; font-size: 0.9em; opacity: 0.8;"></div>
+        <div id="status-message" class="status-message"></div>
         
-        <div id="game-actions" style="display:flex; gap:10px; flex-wrap:wrap;">
-          <button class="btn-primary" id="action-play-card" disabled>Play Card</button>
-          <button class="btn-primary" id="action-take-merchant" disabled>Take Merchant Card</button>
-          <button class="btn-primary" id="action-claim-vp" disabled>Claim Victory Points</button>
-          <button class="btn-primary" id="action-rest" disabled>Rest (Take All Cards)</button>
+        <div id="game-status" class="game-meta"></div>
+        
+        <div id="game-actions" class="action-buttons">
+          <button class="btn-action" id="action-play-card" disabled>Play Card</button>
+          <button class="btn-action" id="action-take-merchant" disabled>Take Merchant</button>
+          <button class="btn-action" id="action-claim-vp" disabled>Claim Points</button>
+          <button class="btn-action" id="action-rest" disabled>Rest</button>
         </div>
         
-        <div id="action-result" style="margin-top: 20px; padding: 10px; border-radius: 4px; display:none;"></div>
+        <div id="action-log" class="action-log">
+          <h3>Action Log</h3>
+          <div id="action-log-content"></div>
+        </div>
       </div>
     </div>
   `;
@@ -131,7 +136,7 @@ function setupEventListeners() {
   const joinForm = document.getElementById('join-form');
   joinForm?.addEventListener('submit', handleJoinRoom);
   
-  // Game action buttons
+  // Game action buttons with debounce
   document.getElementById('action-play-card')?.addEventListener('click', () => handleGameAction('play-card'));
   document.getElementById('action-take-merchant')?.addEventListener('click', () => handleGameAction('take-merchant'));
   document.getElementById('action-claim-vp')?.addEventListener('click', () => handleGameAction('claim-vp'));
@@ -181,7 +186,6 @@ async function handleCreateRoom(event: Event) {
     });
     
     gameRoom.on('peer-connected', ({ playerName }) => {
-      console.log(`Player ${playerName} joined!`);
       updatePlayerList();
     });
     
@@ -213,17 +217,17 @@ async function handleCreateRoom(event: Event) {
       }
     });
     
-    gameRoom.on('action-processed', (action, success) => {
+    gameRoom.on('action-processed', (action, success, error) => {
       if (success) {
-        showActionResult('Action processed successfully', 'success');
+        showStatusMessage('Action processed successfully', 'success');
+        addActionToLog(action, currentPlayerId);
       } else {
-        showActionResult('Action processing failed', 'error');
+        showStatusMessage(error || 'Action processing failed', 'error');
       }
     });
     
     gameRoom.on('room-error', (error: Error) => {
-      console.error('Room error:', error);
-      alert(`Error: ${error.message}`);
+      showStatusMessage(`Error: ${error.message}`, 'error');
     });
     
     // Generate player names
@@ -233,7 +237,6 @@ async function handleCreateRoom(event: Event) {
     await gameRoom.createRoom(playerNames);
     
   } catch (error) {
-    console.error('Failed to create room:', error);
     alert(`Failed to create room: ${(error as Error).message}`);
   }
 }
@@ -283,7 +286,6 @@ async function handleJoinRoom(event: Event) {
     
     // Set up event listeners
     gameClient.on('connected', () => {
-      alert(`Successfully joined room ${roomCode}!`);
       // Hide forms, show game area
       document.getElementById('create-tab')!.style.display = 'none';
       document.getElementById('join-tab')!.style.display = 'none';
@@ -295,11 +297,12 @@ async function handleJoinRoom(event: Event) {
         if (playerNameEl) {
           playerNameEl.textContent = playerName;
         }
+        showStatusMessage(`Connected to room ${roomCode}`, 'success');
       }
     });
     
     gameClient.on('disconnected', () => {
-      showActionResult('Disconnected from room', 'error');
+      showStatusMessage('Disconnected from room', 'error');
     });
     
     gameClient.on('host-disconnected', () => {
@@ -319,19 +322,19 @@ async function handleJoinRoom(event: Event) {
     
     gameClient.on('game-state-received', (game) => {
       updateGameUI(game);
+      addActionToLog(null, currentPlayerId);
     });
     
     gameClient.on('action-accepted', (action) => {
-      showActionResult('Action accepted! Waiting for state update...', 'success');
+      showStatusMessage('Sending action to host...', 'info');
     });
     
     gameClient.on('action-rejected', (action, error) => {
-      showActionResult(`Action rejected: ${error}`, 'error');
+      showStatusMessage(`Invalid action: ${error}`, 'error');
     });
     
     gameClient.on('error', (error: Error) => {
-      console.error('Client error:', error);
-      alert(`Error: ${error.message}`);
+      showStatusMessage(`Error: ${error.message}`, 'error');
     });
     
     // Generate player ID and store it
@@ -341,7 +344,6 @@ async function handleJoinRoom(event: Event) {
     await gameClient.joinRoomWithPeerId(roomCode, hostPeerId, currentPlayerId, playerName);
     
   } catch (error) {
-    console.error('Failed to join room:', error);
     alert(`Failed to join room: ${(error as Error).message}`);
   }
 }
@@ -356,18 +358,27 @@ function generateRoomCode(): string {
 }
 
 // Game action handler
+let actionInProgress = false;
+
 async function handleGameAction(actionType: string) {
+  if (actionInProgress) {
+    return;
+  }
+  
   if (!gameClient) {
-    showActionResult('Not connected to a room', 'error');
+    showStatusMessage('Not connected to a room', 'error');
     return;
   }
   
   if (!currentPlayerId) {
-    showActionResult('Player ID not set', 'error');
+    showStatusMessage('Player ID not set', 'error');
     return;
   }
   
   try {
+    actionInProgress = true;
+    disableAllActionButtons();
+    
     let action: GameAction;
     
     switch (actionType) {
@@ -380,31 +391,32 @@ async function handleGameAction(actionType: string) {
         break;
         
       case 'play-card':
-        // For demo: play first card in hand
-        showActionResult('Select a card to play (UI not implemented)', 'error');
+        showStatusMessage('Select a card to play (UI not implemented)', 'error');
+        actionInProgress = false;
         return;
         
       case 'take-merchant':
-        // For demo: take first available merchant card
-        showActionResult('Select a merchant card (UI not implemented)', 'error');
+        showStatusMessage('Select a merchant card (UI not implemented)', 'error');
+        actionInProgress = false;
         return;
         
       case 'claim-vp':
-        // For demo: claim first available victory point card
-        showActionResult('Select a victory point card (UI not implemented)', 'error');
+        showStatusMessage('Select a victory point card (UI not implemented)', 'error');
+        actionInProgress = false;
         return;
         
       default:
-        showActionResult('Unknown action type', 'error');
+        showStatusMessage('Unknown action type', 'error');
+        actionInProgress = false;
         return;
     }
     
-    // Send action to host via P2P
-    showActionResult('Waiting for host...', 'info');
+    showStatusMessage('Sending action to host...', 'info');
     await gameClient.sendAction(action);
     
   } catch (error) {
-    showActionResult(`Failed to send action: ${(error as Error).message}`, 'error');
+    showStatusMessage(`Failed to send action: ${(error as Error).message}`, 'error');
+    actionInProgress = false;
   }
 }
 
@@ -413,16 +425,21 @@ function updateGameUI(game: any) {
   const currentPlayer = game.players[game.currentPlayerIndex];
   const isMyTurn = currentPlayer?.id === currentPlayerId;
   const myPlayer = game.players.find((p: any) => p.id === currentPlayerId);
+  const gameEnded = game.phase === 'FINISHED';
   
   // Update turn status message
   const turnMessage = document.getElementById('turn-message');
-  if (turnMessage) {
-    if (isMyTurn) {
-      turnMessage.textContent = 'Your turn';
-      turnMessage.style.color = '#4caf50';
+  const turnStatus = document.getElementById('turn-status');
+  if (turnMessage && turnStatus) {
+    if (gameEnded) {
+      turnMessage.textContent = 'Game Over';
+      turnStatus.className = 'info-panel turn-indicator turn-ended';
+    } else if (isMyTurn) {
+      turnMessage.textContent = 'YOUR TURN';
+      turnStatus.className = 'info-panel turn-indicator turn-active';
     } else {
-      turnMessage.textContent = `Waiting for ${currentPlayer?.name || 'Unknown'}`;
-      turnMessage.style.color = '#ff9800';
+      turnMessage.textContent = `Waiting for ${currentPlayer?.name || 'opponent'}`;
+      turnStatus.className = 'info-panel turn-indicator turn-waiting';
     }
   }
   
@@ -432,47 +449,110 @@ function updateGameUI(game: any) {
     statusEl.textContent = `Turn ${game.turnNumber} • ${game.phase} • ${game.players.length} players`;
   }
   
-  // Enable/disable action buttons based on turn
-  const actionButtons = document.querySelectorAll('#game-actions button');
-  actionButtons.forEach((btn: any) => {
-    btn.disabled = !isMyTurn;
-    btn.style.opacity = isMyTurn ? '1' : '0.5';
-    btn.style.cursor = isMyTurn ? 'pointer' : 'not-allowed';
-  });
+  // Enable/disable action buttons based on turn and game state
+  updateActionButtons(isMyTurn, gameEnded);
   
-  // Hide action feedback when state updates
-  const actionResult = document.getElementById('action-result');
-  if (actionResult && actionResult.textContent.includes('Waiting for host')) {
-    actionResult.style.display = 'none';
-  }
+  // Clear action in progress flag when state updates
+  actionInProgress = false;
 }
 
-// Show action result feedback
-function showActionResult(message: string, type: 'success' | 'error' | 'info') {
-  const resultEl = document.getElementById('action-result');
-  if (!resultEl) return;
+function updateActionButtons(isMyTurn: boolean, gameEnded: boolean) {
+  const actionButtons = document.querySelectorAll<HTMLButtonElement>('#game-actions button');
+  const canAct = isMyTurn && !gameEnded && !actionInProgress;
   
-  resultEl.textContent = message;
-  resultEl.style.display = 'block';
+  actionButtons.forEach((btn) => {
+    btn.disabled = !canAct;
+    if (canAct) {
+      btn.classList.remove('btn-disabled');
+    } else {
+      btn.classList.add('btn-disabled');
+    }
+  });
+}
+
+function disableAllActionButtons() {
+  const actionButtons = document.querySelectorAll<HTMLButtonElement>('#game-actions button');
+  actionButtons.forEach((btn) => {
+    btn.disabled = true;
+    btn.classList.add('btn-disabled');
+  });
+}
+
+// Show status message feedback
+function showStatusMessage(message: string, type: 'success' | 'error' | 'info') {
+  const statusEl = document.getElementById('status-message');
+  if (!statusEl) return;
   
-  // Color coding
-  if (type === 'success') {
-    resultEl.style.backgroundColor = '#4caf50';
-    resultEl.style.color = 'white';
-  } else if (type === 'error') {
-    resultEl.style.backgroundColor = '#f44336';
-    resultEl.style.color = 'white';
-  } else {
-    resultEl.style.backgroundColor = '#2196f3';
-    resultEl.style.color = 'white';
-  }
+  statusEl.textContent = message;
+  statusEl.className = `status-message status-${type}`;
+  statusEl.style.display = 'block';
   
   // Auto-hide after 5 seconds
   setTimeout(() => {
-    if (resultEl) {
-      resultEl.style.display = 'none';
+    if (statusEl) {
+      statusEl.style.display = 'none';
     }
   }, 5000);
+}
+
+// Action log management
+const actionLogEntries: string[] = [];
+const MAX_LOG_ENTRIES = 10;
+
+function addActionToLog(action: GameAction | null, playerId: string) {
+  if (!gameRoom) return;
+  
+  const game = (gameRoom as any).game;
+  if (!game) return;
+  
+  if (action) {
+    const player = game.players.find((p: any) => p.id === action.playerId);
+    const actionText = formatActionForLog(action, player?.name || 'Unknown');
+    
+    actionLogEntries.unshift(actionText);
+    if (actionLogEntries.length > MAX_LOG_ENTRIES) {
+      actionLogEntries.pop();
+    }
+    
+    renderActionLog();
+  }
+}
+
+function formatActionForLog(action: GameAction, playerName: string): string {
+  const timestamp = new Date(action.timestamp).toLocaleTimeString();
+  let actionDesc = '';
+  
+  switch (action.type) {
+    case ActionType.Rest:
+      actionDesc = 'rested and took all cards back';
+      break;
+    case ActionType.PlayCard:
+      actionDesc = 'played a card';
+      break;
+    case ActionType.TakeMerchantCard:
+      actionDesc = 'took a merchant card';
+      break;
+    case ActionType.ClaimVictoryPoints:
+      actionDesc = 'claimed victory points';
+      break;
+    default:
+      actionDesc = 'performed an action';
+  }
+  
+  return `[${timestamp}] ${playerName} ${actionDesc}`;
+}
+
+function renderActionLog() {
+  const logContent = document.getElementById('action-log-content');
+  if (!logContent) return;
+  
+  if (actionLogEntries.length === 0) {
+    logContent.innerHTML = '<div class="log-empty">No actions yet</div>';
+  } else {
+    logContent.innerHTML = actionLogEntries
+      .map(entry => `<div class="log-entry">${entry}</div>`)
+      .join('');
+  }
 }
 
 // Initialize when DOM is ready
