@@ -165,6 +165,10 @@ export class P2PGameClient {
       throw new Error('Already connected or connecting to a room');
     }
     
+    if (this.peer) {
+      throw new Error('Peer already exists. Call disconnect() first.');
+    }
+    
     this.connecting = true;
     this.roomCode = roomCode.toUpperCase();
     this.playerId = playerId;
@@ -235,9 +239,12 @@ export class P2PGameClient {
       
       // Create peer - use default cloud server for maximum compatibility
       try {
+        console.log('[Client] Creating Peer:', this.clientPeerId);
         this.peer = new Peer(this.clientPeerId, {
-          debug: 2
+          debug: 1,  // Reduced debug level
+          secure: typeof window !== 'undefined' && window.location.protocol === 'https:'
         });
+        console.log('[Client] Peer instance created, waiting for signaling server...');
       } catch (err) {
         clearTimeout(timeout);
         reject(new Error(`Failed to create Peer: ${err}`));
@@ -246,14 +253,14 @@ export class P2PGameClient {
       
       this.peer.on('open', (id: string) => {
         clearTimeout(timeout);
-        console.log('[Client] PeerJS initialized:', id);
-        console.log('[Client] Connected to signaling server');
+        console.log('[Client] ✓ Peer opened, ID:', id);
+        console.log('[Client] ✓ Connected to signaling server');
         resolve();
       });
       
       this.peer.on('error', (err: any) => {
         clearTimeout(timeout);
-        console.error('[Client] PeerJS error:', err);
+        console.error('[Client] ✗ PeerJS error:', err);
         const errorMsg = err.type ? `${err.type}: ${err.message || err}` : String(err);
         reject(new Error(`Signaling server error: ${errorMsg}. Try refreshing the page.`));
       });
@@ -322,30 +329,39 @@ export class P2PGameClient {
    */
   private async connectToHost(timeout: number): Promise<void> {
     return new Promise((resolve, reject) => {
-      console.log('[Client] Connecting to host:', this.hostPeerId);
+      console.log('[Client] >>> Attempting connection to host:', this.hostPeerId);
       
       const timeoutTimer = setTimeout(() => {
+        console.error('[Client] ✗ Connection timeout after', timeout, 'ms');
         this.hostConnection?.close();
         reject(new Error('Connection timeout. Make sure you and the host are on the same network (WiFi). Check that the Host Peer ID is correct.'));
       }, timeout);
       
+      console.log('[Client] Creating DataConnection...');
       this.hostConnection = this.peer!.connect(this.hostPeerId, {
         reliable: true,
         serialization: 'json'
       });
       
+      // CRITICAL: Attach ALL handlers IMMEDIATELY after creating connection
       this.hostConnection.on('open', () => {
         clearTimeout(timeoutTimer);
-        console.log('[Client] Connected to host');
+        console.log('[Client] ✓ Connection opened to host');
         this.setupConnectionListeners();
         resolve();
       });
       
       this.hostConnection.on('error', (err: Error) => {
         clearTimeout(timeoutTimer);
-        console.error('[Client] Connection error:', err);
+        console.error('[Client] ✗ Connection error:', err);
         reject(new Error(`Connection failed: ${err.message}. Ensure you're on the same network as the host.`));
       });
+      
+      this.hostConnection.on('close', () => {
+        console.log('[Client] Connection closed during setup');
+      });
+      
+      console.log('[Client] Connection handlers attached, waiting for open...');
     });
   }
   
@@ -355,19 +371,24 @@ export class P2PGameClient {
   private setupConnectionListeners(): void {
     if (!this.hostConnection) return;
     
+    console.log('[Client] Setting up data/close handlers...');
+    
     this.hostConnection.on('data', (data: any) => {
       this.lastHostMessage = Date.now();
+      console.log('[Client] <<< Received message type:', (data as P2PMessage).type);
       this.handleHostMessage(data as P2PMessage);
     });
     
     this.hostConnection.on('close', () => {
-      console.log('[Client] Host connection closed');
+      console.log('[Client] ✗ Host connection closed');
       this.handleHostDisconnect();
     });
     
     this.hostConnection.on('error', (err: Error) => {
-      console.error('[Client] Host connection error:', err);
+      console.error('[Client] ✗ Host connection error:', err);
     });
+    
+    console.log('[Client] ✓ All connection listeners ready');
   }
   
   /**

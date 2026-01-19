@@ -150,6 +150,11 @@ export class P2PGameRoom {
       throw new Error('Invalid player count. Must be 2-5 players.');
     }
     
+    // Prevent duplicate room creation
+    if (this.peer) {
+      throw new Error('Room already created. Cannot create multiple rooms.');
+    }
+    
     try {
       // Step 1: Generate short room code
       this.roomCode = this.generateRoomCode();
@@ -235,34 +240,38 @@ export class P2PGameRoom {
       
       // Create peer - use default cloud server for maximum compatibility
       try {
+        console.log('[Room] Creating Peer:', this.hostPeerId);
         this.peer = new Peer(this.hostPeerId, {
-          debug: 2
+          debug: 1,  // Reduced debug level (1=errors only)
+          secure: typeof window !== 'undefined' && window.location.protocol === 'https:'
         });
+        console.log('[Room] Peer instance created, waiting for signaling server...');
       } catch (err) {
         clearTimeout(timeout);
         reject(new Error(`Failed to create Peer: ${err}`));
         return;
       }
       
+      // Attach connection listener BEFORE 'open' to avoid race condition
+      this.peer.on('connection', (conn: DataConnection) => {
+        console.log('[Room] >>> Incoming connection from:', conn.peer);
+        this.handleIncomingConnection(conn);
+      });
+      
       this.peer.on('open', (id: string) => {
         clearTimeout(timeout);
-        console.log('[Room] PeerJS host initialized:', id);
-        console.log('[Room] Connected to signaling server');
+        console.log('[Room] ✓ Peer opened, ID:', id);
+        console.log('[Room] ✓ Connected to signaling server');
+        console.log('[Room] ✓ Ready to accept connections');
         this.setupPeerListeners();
         resolve();
       });
       
       this.peer.on('error', (err: any) => {
         clearTimeout(timeout);
-        console.error('[Room] PeerJS error:', err);
+        console.error('[Room] ✗ PeerJS error:', err);
         const errorMsg = err.type ? `${err.type}: ${err.message || err}` : String(err);
         reject(new Error(`Signaling server error: ${errorMsg}. Try refreshing the page.`));
-      });
-      
-      // Connection listener
-      this.peer.on('connection', (conn: DataConnection) => {
-        console.log('[Room] Incoming connection from:', conn.peer);
-        this.handleIncomingConnection(conn);
       });
       
       this.peer.on('disconnected', () => {
@@ -311,16 +320,22 @@ export class P2PGameRoom {
    * Handle incoming peer connection.
    */
   private handleIncomingConnection(conn: DataConnection): void {
+    console.log('[Room] Processing incoming connection from:', conn.peer);
     this.emit('peer-connecting', conn.peer);
     
     // Wait for connection to open
     conn.on('open', () => {
+      console.log('[Room] ✓ Connection opened with:', conn.peer);
       this.connectedPeers.set(conn.peer, conn);
       this.setupConnectionListeners(conn);
     });
     
     conn.on('error', (err: Error) => {
-      console.error('[Room] Connection error:', conn.peer, err);
+      console.error('[Room] ✗ Connection error with', conn.peer, ':', err);
+    });
+    
+    conn.on('close', () => {
+      console.log('[Room] Connection closed:', conn.peer);
     });
   }
   
@@ -328,19 +343,25 @@ export class P2PGameRoom {
    * Set up listeners for a peer connection.
    */
   private setupConnectionListeners(conn: DataConnection): void {
+    console.log('[Room] Attaching message handlers for:', conn.peer);
+    
     // Receive messages
     conn.on('data', (data: any) => {
+      console.log('[Room] <<< Received message from', conn.peer, 'type:', (data as P2PMessage).type);
       this.handlePeerMessage(data as P2PMessage, conn.peer);
     });
     
     // Handle disconnect
     conn.on('close', () => {
+      console.log('[Room] ✗ Peer disconnected:', conn.peer);
       this.handlePeerDisconnect(conn.peer);
     });
     
     conn.on('error', (err: Error) => {
-      console.error('[Room] Peer error:', conn.peer, err);
+      console.error('[Room] ✗ Peer error:', conn.peer, err);
     });
+    
+    console.log('[Room] ✓ Message handlers ready for:', conn.peer);
   }
   
   /**
