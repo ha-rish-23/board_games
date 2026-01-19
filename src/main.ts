@@ -217,12 +217,12 @@ async function handleCreateRoom(event: Event) {
       }
     });
     
-    gameRoom.on('action-processed', (action, success, error) => {
+    gameRoom.on('action-processed', (action, success) => {
       if (success) {
         showStatusMessage('Action processed successfully', 'success');
         addActionToLog(action, currentPlayerId);
       } else {
-        showStatusMessage(error || 'Action processing failed', 'error');
+        showStatusMessage('Action processing failed', 'error');
       }
     });
     
@@ -526,14 +526,14 @@ function formatActionForLog(action: GameAction, playerName: string): string {
     case ActionType.Rest:
       actionDesc = 'rested and took all cards back';
       break;
-    case ActionType.PlayCard:
-      actionDesc = 'played a card';
+    case ActionType.PlayMerchantCard:
+      actionDesc = 'played a merchant card';
       break;
-    case ActionType.TakeMerchantCard:
-      actionDesc = 'took a merchant card';
+    case ActionType.AcquireMerchantCard:
+      actionDesc = 'acquired a merchant card';
       break;
-    case ActionType.ClaimVictoryPoints:
-      actionDesc = 'claimed victory points';
+    case ActionType.ClaimPointCard:
+      actionDesc = 'claimed a point card';
       break;
     default:
       actionDesc = 'performed an action';
