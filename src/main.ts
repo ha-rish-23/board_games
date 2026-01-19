@@ -181,6 +181,20 @@ async function handleCreateRoom(event: Event) {
         totalCount.textContent = playerCount.toString();
       }
       
+      // Host is automatically player_0 (first player)
+      const game = (gameRoom as any).game;
+      if (game && game.players && game.players.length > 0) {
+        currentPlayerId = game.players[0].id;
+        const playerNameEl = document.getElementById('your-player-name');
+        if (playerNameEl) {
+          playerNameEl.textContent = game.players[0].name;
+        }
+        const hostIndicator = document.getElementById('host-indicator');
+        if (hostIndicator) {
+          hostIndicator.style.display = 'inline-block';
+        }
+      }
+      
       updatePlayerList();
       roomInfo.style.display = 'block';
     });
@@ -199,19 +213,6 @@ async function handleCreateRoom(event: Event) {
           roomInfo.style.display = 'none';
         }
         gameArea.style.display = 'block';
-        
-        // Set host identity on first game state
-        if (!currentPlayerId) {
-          currentPlayerId = game.players[0].id; // Host is first player
-          const playerNameEl = document.getElementById('your-player-name');
-          if (playerNameEl) {
-            playerNameEl.textContent = game.players[0].name;
-          }
-          const hostIndicator = document.getElementById('host-indicator');
-          if (hostIndicator) {
-            hostIndicator.style.display = 'inline';
-          }
-        }
         
         updateGameUI(game);
       }
@@ -258,11 +259,17 @@ function updatePlayerList() {
     Array.from(connections.values()).map((conn: any) => conn.playerId)
   );
   
-  playerList.innerHTML = game.players.map((player: any) => {
+  // Host (player_0) is always connected
+  if (game.players && game.players.length > 0) {
+    connectedPlayerIds.add(game.players[0].id);
+  }
+  
+  playerList.innerHTML = game.players.map((player: any, index: number) => {
     const isConnected = connectedPlayerIds.has(player.id);
     const statusIcon = isConnected ? '✅' : '⏳';
     const statusText = isConnected ? 'Connected' : 'Waiting...';
-    return `<div style="padding: 5px 0;">${statusIcon} ${player.name} - ${statusText}</div>`;
+    const hostLabel = index === 0 ? ' (Host)' : '';
+    return `<div style="padding: 5px 0;">${statusIcon} ${player.name}${hostLabel} - ${statusText}</div>`;
   }).join('');
   
   connectedCount.textContent = connectedPlayerIds.size.toString();
