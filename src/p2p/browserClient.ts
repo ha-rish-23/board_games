@@ -237,12 +237,36 @@ export class P2PGameClient {
         reject(new Error('PeerJS initialization timeout (10s). Please check your internet connection and try again.'));
       }, 10000);
       
-      // Create peer - use default cloud server for maximum compatibility
+      // Create peer - use async-games working configuration
       try {
         console.log('[Client] Creating Peer:', this.clientPeerId);
         this.peer = new Peer(this.clientPeerId, {
-          debug: 1,  // Reduced debug level
-          secure: typeof window !== 'undefined' && window.location.protocol === 'https:'
+          host: '0.peerjs.com',
+          port: 443,
+          path: '/',
+          secure: true,
+          debug: 1,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' },
+              {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+              },
+              {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+              },
+              {
+                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+              }
+            ]
+          }
         });
         console.log('[Client] Peer instance created, waiting for signaling server...');
       } catch (err) {

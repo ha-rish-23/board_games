@@ -167,8 +167,8 @@ export class P2PGameRoom {
       this.game = createNewGame(players, seed || this.generateSeed());
       this.syncHandler = new HostStateSyncHandler(this.game);
       
-      // Step 3: Initialize PeerJS host
-      this.hostPeerId = `host_${this.roomCode}_${Date.now()}`;
+      // Step 3: Initialize PeerJS host with predictable ID format
+      this.hostPeerId = `boardgame-${this.roomCode.toLowerCase()}`;
       await this.initializePeerHost();
       
       // Step 4: Store config
@@ -238,12 +238,36 @@ export class P2PGameRoom {
         reject(new Error('PeerJS initialization timeout (10s). Please check your internet connection and try again.'));
       }, 10000);
       
-      // Create peer - use default cloud server for maximum compatibility
+      // Create peer - use async-games working configuration
       try {
         console.log('[Room] Creating Peer:', this.hostPeerId);
         this.peer = new Peer(this.hostPeerId, {
-          debug: 1,  // Reduced debug level (1=errors only)
-          secure: typeof window !== 'undefined' && window.location.protocol === 'https:'
+          host: '0.peerjs.com',
+          port: 443,
+          path: '/',
+          secure: true,
+          debug: 1,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' },
+              {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+              },
+              {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+              },
+              {
+                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+              }
+            ]
+          }
         });
         console.log('[Room] Peer instance created, waiting for signaling server...');
       } catch (err) {
