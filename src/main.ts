@@ -45,11 +45,21 @@ function initApp() {
           <button type="submit" class="btn-primary">Create Room</button>
         </form>
         <div id="room-info" style="display:none;">
-          <h3>Room Created!</h3>
-          <p>Share this room code with other players:</p>
-          <div class="room-code" id="room-code-display"></div>
-          <p>Share this peer ID:</p>
-          <div class="peer-id" id="peer-id-display"></div>
+          <h3>✅ Room Created!</h3>
+          <p><strong>Share these with other players:</strong></p>
+          <div style="margin: 15px 0;">
+            <label>Room Code:</label>
+            <div class="room-code" id="room-code-display"></div>
+          </div>
+          <div style="margin: 15px 0;">
+            <label>Host Peer ID:</label>
+            <div class="peer-id" id="peer-id-display"></div>
+          </div>
+          <div id="players-waiting" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+            <h4>Players Connected: <span id="connected-count">1</span>/<span id="total-count">3</span></h4>
+            <div id="player-list"></div>
+            <p style="margin-top: 15px; opacity: 0.8; font-size: 0.9em;">Game will start automatically when all players join.</p>
+          </div>
         </div>
       </div>
       
@@ -157,20 +167,33 @@ async function handleCreateRoom(event: Event) {
     gameRoom = new P2PGameRoom();
     
     // Set up event listeners
-    gameRoom.on('room-created', ({ roomCode, hostPeerId }) => {
+    gameRoom.on('room-created', ({ roomCode, hostPeerId, playerCount }) => {
       codeDisplay.textContent = roomCode;
       peerDisplay.textContent = hostPeerId;
+      
+      const totalCount = document.getElementById('total-count');
+      if (totalCount) {
+        totalCount.textContent = playerCount.toString();
+      }
+      
+      updatePlayerList();
       roomInfo.style.display = 'block';
     });
     
-    gameRoom.on('peer-connected', ({ peerId, playerName }) => {
-      alert(`Player ${playerName} joined the room!`);
+    gameRoom.on('peer-connected', ({ playerName }) => {
+      console.log(`Player ${playerName} joined!`);
+      updatePlayerList();
     });
     
     gameRoom.on('game-state-updated', (game) => {
       // Host also sees game updates
       const gameArea = document.getElementById('game-area');
       if (gameArea && game.phase === 'PLAYING') {
+        // Hide room info, show game
+        const roomInfo = document.getElementById('room-info');
+        if (roomInfo) {
+          roomInfo.style.display = 'none';
+        }
         gameArea.style.display = 'block';
         
         // Set host identity on first game state
@@ -213,6 +236,33 @@ async function handleCreateRoom(event: Event) {
     console.error('Failed to create room:', error);
     alert(`Failed to create room: ${(error as Error).message}`);
   }
+}
+
+function updatePlayerList() {
+  if (!gameRoom) return;
+  
+  const playerList = document.getElementById('player-list');
+  const connectedCount = document.getElementById('connected-count');
+  
+  if (!playerList || !connectedCount) return;
+  
+  const game = (gameRoom as any).game;
+  const connections = (gameRoom as any).playerConnections;
+  
+  if (!game) return;
+  
+  const connectedPlayerIds = new Set(
+    Array.from(connections.values()).map((conn: any) => conn.playerId)
+  );
+  
+  playerList.innerHTML = game.players.map((player: any) => {
+    const isConnected = connectedPlayerIds.has(player.id);
+    const statusIcon = isConnected ? '✅' : '⏳';
+    const statusText = isConnected ? 'Connected' : 'Waiting...';
+    return `<div style="padding: 5px 0;">${statusIcon} ${player.name} - ${statusText}</div>`;
+  }).join('');
+  
+  connectedCount.textContent = connectedPlayerIds.size.toString();
 }
 
 async function handleJoinRoom(event: Event) {

@@ -473,6 +473,7 @@ export class P2PGameRoom {
     if (this.game.phase === GamePhase.Setup && this.playerConnections.size === this.game.players.length) {
       this.game.phase = GamePhase.Playing;
       console.log('[Room] All players connected - game starting!');
+      this.emit('game-state-updated', this.game);
     }
     
     // Send current game state
