@@ -46,14 +46,9 @@ function initApp() {
         </form>
         <div id="room-info" style="display:none;">
           <h3>✅ Room Created!</h3>
-          <p><strong>Share these with other players:</strong></p>
+          <p><strong>Share this Room Code with other players:</strong></p>
           <div style="margin: 15px 0;">
-            <label>Room Code:</label>
             <div class="room-code" id="room-code-display"></div>
-          </div>
-          <div style="margin: 15px 0;">
-            <label>Host Peer ID:</label>
-            <div class="peer-id" id="peer-id-display"></div>
           </div>
           <div id="players-waiting" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 4px;">
             <h4>Players Connected: <span id="connected-count">1</span>/<span id="total-count">3</span></h4>
@@ -68,15 +63,11 @@ function initApp() {
         <form id="join-form">
           <div class="form-group">
             <label>Room Code:</label>
-            <input type="text" id="room-code-input" placeholder="e.g., A3F9K2" />
-          </div>
-          <div class="form-group">
-            <label>Host Peer ID:</label>
-            <input type="text" id="host-peer-id-input" placeholder="Provided by host" />
+            <input type="text" id="room-code-input" placeholder="e.g., A3F9K2" required />
           </div>
           <div class="form-group">
             <label>Your Name:</label>
-            <input type="text" id="player-name-input" placeholder="Enter your name" />
+            <input type="text" id="player-name-input" placeholder="Enter your name" required />
           </div>
           <button type="submit" class="btn-primary">Join Room</button>
         </form>
@@ -163,9 +154,8 @@ async function handleCreateRoom(event: Event) {
   const playerCount = parseInt((document.getElementById('player-count') as HTMLInputElement).value);
   const roomInfo = document.getElementById('room-info');
   const codeDisplay = document.getElementById('room-code-display');
-  const peerDisplay = document.getElementById('peer-id-display');
   
-  if (!roomInfo || !codeDisplay || !peerDisplay) return;
+  if (!roomInfo || !codeDisplay) return;
   
   try {
     // Create P2P room
@@ -174,7 +164,6 @@ async function handleCreateRoom(event: Event) {
     // Set up event listeners
     gameRoom.on('room-created', ({ roomCode, hostPeerId, playerCount }) => {
       codeDisplay.textContent = roomCode;
-      peerDisplay.textContent = hostPeerId;
       
       const totalCount = document.getElementById('total-count');
       if (totalCount) {
@@ -278,14 +267,16 @@ function updatePlayerList() {
 async function handleJoinRoom(event: Event) {
   event.preventDefault();
   
-  const roomCode = (document.getElementById('room-code-input') as HTMLInputElement).value;
-  const hostPeerId = (document.getElementById('host-peer-id-input') as HTMLInputElement).value;
-  const playerName = (document.getElementById('player-name-input') as HTMLInputElement).value;
+  const roomCode = (document.getElementById('room-code-input') as HTMLInputElement).value.trim().toUpperCase();
+  const playerName = (document.getElementById('player-name-input') as HTMLInputElement).value.trim();
   
-  if (!roomCode || !hostPeerId || !playerName) {
+  if (!roomCode || !playerName) {
     alert('Please fill in all fields');
     return;
   }
+  
+  // Derive peer ID from room code (same format as host)
+  const hostPeerId = `boardgame-${roomCode.toLowerCase()}`;
   
   try {
     // Create P2P client

@@ -153,18 +153,18 @@ h1 {
   margin-bottom: 15px;
 }
 
-.room-code,
-.peer-id {
+.room-code {
   background: white;
-  padding: 15px;
-  border-radius: 4px;
+  padding: 20px;
+  border-radius: 8px;
   font-family: 'Courier New', monospace;
-  font-size: 1.2em;
+  font-size: 1.8em;
   font-weight: bold;
-  color: #333;
+  color: #667eea;
   margin: 10px 0;
   text-align: center;
-  border: 2px solid #667eea;
+  border: 3px solid #667eea;
+  letter-spacing: 0.1em;
 }
 
 /* Game Area */
