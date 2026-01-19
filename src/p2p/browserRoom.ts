@@ -441,30 +441,25 @@ export class P2PGameRoom {
       return;
     }
     
-    // Find player in game
-    const player = this.game.players.find(p => p.id === msg.playerId);
-    if (!player) {
-      this.sendError(peerId, 'PLAYER_NOT_FOUND', 'Player not in this game');
+    // Find first available player slot (not yet connected)
+    const availablePlayer = this.game.players.find(p => !this.playerConnections.has(p.id));
+    if (!availablePlayer) {
+      this.sendError(peerId, 'ROOM_FULL', 'All player slots are taken');
       return;
     }
     
-    // Check if already connected
-    if (this.playerConnections.has(msg.playerId)) {
-      const existing = this.playerConnections.get(msg.playerId)!;
-      if (existing.connected) {
-        this.sendError(peerId, 'ALREADY_CONNECTED', 'Player already in game');
-        return;
-      } else {
-        // Reconnection
-        this.handlePlayerReconnect(msg, peerId);
-        return;
-      }
+    console.log('[Room] Assigning peer', peerId, 'to player slot:', availablePlayer.id);
+    
+    // Update player name if provided
+    if (msg.playerName && msg.playerName !== availablePlayer.name) {
+      availablePlayer.name = msg.playerName;
+      console.log('[Room] Updated player name to:', msg.playerName);
     }
     
     // Accept connection
     const playerInfo: ConnectedPlayer = {
-      playerId: msg.playerId,
-      playerName: player.name,
+      playerId: availablePlayer.id,  // Use the game's player ID
+      playerName: availablePlayer.name,
       peerId: peerId,
       connected: true,
       connectedAt: Date.now()
