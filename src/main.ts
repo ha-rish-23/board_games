@@ -94,6 +94,32 @@ function initApp() {
         
         <div id="game-status" class="game-meta"></div>
         
+        <div id="game-state" class="game-state">
+          <div class="player-section">
+            <h4>Your Caravan</h4>
+            <div id="player-caravan" class="caravan-display"></div>
+          </div>
+          <div class="player-section">
+            <h4>Your Hand</h4>
+            <div id="player-hand" class="card-display"></div>
+          </div>
+          <div class="player-section">
+            <h4>Play Area</h4>
+            <div id="player-play-area" class="card-display"></div>
+          </div>
+        </div>
+        
+        <div id="shared-board" class="shared-board">
+          <div class="board-section">
+            <h4>Merchant Cards</h4>
+            <div id="merchant-row" class="merchant-display"></div>
+          </div>
+          <div class="board-section">
+            <h4>Point Cards</h4>
+            <div id="point-row" class="point-display"></div>
+          </div>
+        </div>
+        
         <div id="game-actions" class="action-buttons">
           <button class="btn-action" id="action-play-card" disabled>Play Card</button>
           <button class="btn-action" id="action-take-merchant" disabled>Take Merchant</button>
@@ -104,6 +130,19 @@ function initApp() {
         <div id="action-log" class="action-log">
           <h3>Action Log</h3>
           <div id="action-log-content"></div>
+        </div>
+      </div>
+      
+      <div id="card-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="modal-title">Select Card</h3>
+            <button class="modal-close" id="modal-close">&times;</button>
+          </div>
+          <div class="modal-body" id="modal-body"></div>
+          <div class="modal-footer">
+            <button class="btn-action" id="modal-cancel">Cancel</button>
+          </div>
         </div>
       </div>
     </div>
@@ -367,6 +406,30 @@ function generateRoomCode(): string {
 // Game action handler
 let actionInProgress = false;
 
+async function executeAction(action: GameAction) {
+  if (isHost) {
+    // Host processes action directly
+    showStatusMessage('Processing action...', 'info');
+    const result = (gameRoom as any).processAction(action);
+    if (result.valid) {
+      showStatusMessage('Action processed successfully', 'success');
+      addActionToLog(action, currentPlayerId);
+    } else {
+      showStatusMessage(`Invalid action: ${result.error}`, 'error');
+    }
+    actionInProgress = false;
+  } else {
+    // Client sends action to host
+    if (!gameClient) {
+      showStatusMessage('Not connected to room', 'error');
+      actionInProgress = false;
+      return;
+    }
+    showStatusMessage('Sending action to host...', 'info');
+    await gameClient.sendAction(action);
+  }
+}
+
 async function handleGameAction(actionType: string) {
   if (actionInProgress) {
     return;
@@ -403,18 +466,39 @@ async function handleGameAction(actionType: string) {
         break;
         
       case 'play-card':
-        showStatusMessage('Select a card to play (UI not implemented)', 'error');
-        actionInProgress = false;
+        await showCardSelectionModal('Play a card from your hand', 'hand', async (cardId: string) => {
+          action = {
+            type: ActionType.PlayMerchantCard,
+            playerId: currentPlayerId,
+            timestamp: Date.now(),
+            cardId
+          };
+          await executeAction(action);
+        });
         return;
         
       case 'take-merchant':
-        showStatusMessage('Select a merchant card (UI not implemented)', 'error');
-        actionInProgress = false;
+        await showCardSelectionModal('Acquire merchant card', 'merchant-row', async (cardIndex: string) => {
+          action = {
+            type: ActionType.AcquireMerchantCard,
+            playerId: currentPlayerId,
+            timestamp: Date.now(),
+            merchantRowIndex: parseInt(cardIndex)
+          };
+          await executeAction(action);
+        });
         return;
         
       case 'claim-vp':
-        showStatusMessage('Select a victory point card (UI not implemented)', 'error');
-        actionInProgress = false;
+        await showCardSelectionModal('Claim point card', 'point-row', async (cardIndex: string) => {
+          action = {
+            type: ActionType.ClaimPointCard,
+            playerId: currentPlayerId,
+            timestamp: Date.now(),
+            pointRowIndex: parseInt(cardIndex)
+          };
+          await executeAction(action);
+        });
         return;
         
       default:
@@ -423,31 +507,183 @@ async function handleGameAction(actionType: string) {
         return;
     }
     
-    if (isHost) {
-      // Host processes action directly
-      showStatusMessage('Processing action...', 'info');
-      const result = (gameRoom as any).processAction(action);
-      if (result.valid) {
-        showStatusMessage('Action processed successfully', 'success');
-        addActionToLog(action, currentPlayerId);
-      } else {
-        showStatusMessage(`Invalid action: ${result.error}`, 'error');
-      }
-      actionInProgress = false;
-    } else {
-      // Client sends action to host
-      if (!gameClient) {
-        showStatusMessage('Not connected to room', 'error');
-        actionInProgress = false;
-        return;
-      }
-      showStatusMessage('Sending action to host...', 'info');
-      await gameClient.sendAction(action);
-    }
+    await executeAction(action);
     
   } catch (error) {
     showStatusMessage(`Failed to send action: ${(error as Error).message}`, 'error');
     actionInProgress = false;
+  }
+}
+
+// Card selection modal
+function showCardSelectionModal(title: string, source: string, onSelect: (selection: string) => Promise<void>): Promise<void> {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('card-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    const modalClose = document.getElementById('modal-close');
+    const modalCancel = document.getElementById('modal-cancel');
+    
+    if (!modal || !modalTitle || !modalBody || !modalClose || !modalCancel) {
+      actionInProgress = false;
+      resolve();
+      return;
+    }
+    
+    modalTitle.textContent = title;
+    modalBody.innerHTML = '';
+    
+    // Get game state
+    const game = isHost ? (gameRoom as any).game : (gameClient as any)?.lastGameState;
+    if (!game) {
+      showStatusMessage('Game state not available', 'error');
+      actionInProgress = false;
+      resolve();
+      return;
+    }
+    
+    const myPlayer = game.players.find((p: any) => p.id === currentPlayerId);
+    if (!myPlayer) {
+      showStatusMessage('Player not found', 'error');
+      actionInProgress = false;
+      resolve();
+      return;
+    }
+    
+    let items: any[] = [];
+    
+    if (source === 'hand') {
+      items = myPlayer.hand;
+    } else if (source === 'merchant-row') {
+      items = game.merchantRow.cards.filter((c: any) => c !== null);
+    } else if (source === 'point-row') {
+      items = game.pointRow.cards.filter((c: any) => c !== null);
+    }
+    
+    if (items.length === 0) {
+      modalBody.innerHTML = '<p style="padding: 20px; text-align: center; color: #6B5D50;">No cards available</p>';
+    } else {
+      items.forEach((item, index) => {
+        const button = document.createElement('button');
+        button.className = 'btn-action card-select-btn';
+        button.style.width = '100%';
+        button.style.marginBottom = '10px';
+        
+        if (source === 'hand') {
+          button.textContent = formatCardName(item);
+          button.onclick = async () => {
+            modal.style.display = 'none';
+            await onSelect(item.id);
+            resolve();
+          };
+        } else {
+          const actualIndex = source === 'merchant-row' 
+            ? game.merchantRow.cards.findIndex((c: any) => c && c.id === item.id)
+            : game.pointRow.cards.findIndex((c: any) => c && c.id === item.id);
+          button.textContent = formatCardName(item);
+          button.onclick = async () => {
+            modal.style.display = 'none';
+            await onSelect(actualIndex.toString());
+            resolve();
+          };
+        }
+        
+        modalBody.appendChild(button);
+      });
+    }
+    
+    const closeModal = () => {
+      modal.style.display = 'none';
+      actionInProgress = false;
+      resolve();
+    };
+    
+    modalClose.onclick = closeModal;
+    modalCancel.onclick = closeModal;
+    
+    modal.style.display = 'flex';
+  });
+}
+
+function formatCardName(card: any): string {
+  if (card.type === 'PRODUCE') {
+    const crystals = Object.entries(card.produces)
+      .filter(([_, count]) => count > 0)
+      .map(([color, count]) => `${count} ${color}`)
+      .join(', ');
+    return `Produce: ${crystals}`;
+  } else if (card.type === 'UPGRADE') {
+    return `Upgrade: ${card.upgrades.length} levels`;
+  } else if (card.type === 'TRADE') {
+    return 'Trade Card';
+  } else if (card.points !== undefined) {
+    return `${card.points} Points`;
+  }
+  return 'Card';
+}
+
+function updatePlayerDisplay(game: any) {
+  const myPlayer = game.players.find((p: any) => p.id === currentPlayerId);
+  if (!myPlayer) return;
+  
+  // Update caravan
+  const caravanEl = document.getElementById('player-caravan');
+  if (caravanEl) {
+    const crystals = Object.entries(myPlayer.caravan)
+      .filter(([_, count]) => (count as number) > 0)
+      .map(([color, count]) => `<span class="crystal crystal-${color.toLowerCase()}">${color}: ${count}</span>`)
+      .join(' ');
+    caravanEl.innerHTML = crystals || '<span style="color: #8B7355;">Empty</span>';
+  }
+  
+  // Update hand
+  const handEl = document.getElementById('player-hand');
+  if (handEl) {
+    if (myPlayer.hand.length === 0) {
+      handEl.innerHTML = '<span style="color: #8B7355;">No cards</span>';
+    } else {
+      handEl.innerHTML = myPlayer.hand
+        .map((card: any) => `<div class="card-item">${formatCardName(card)}</div>`)
+        .join('');
+    }
+  }
+  
+  // Update play area
+  const playAreaEl = document.getElementById('player-play-area');
+  if (playAreaEl) {
+    if (myPlayer.playArea.length === 0) {
+      playAreaEl.innerHTML = '<span style="color: #8B7355;">No cards played</span>';
+    } else {
+      playAreaEl.innerHTML = myPlayer.playArea
+        .map((card: any) => `<div class="card-item">${formatCardName(card)}</div>`)
+        .join('');
+    }
+  }
+  
+  // Update merchant row
+  const merchantRowEl = document.getElementById('merchant-row');
+  if (merchantRowEl) {
+    merchantRowEl.innerHTML = game.merchantRow.cards
+      .map((card: any, i: number) => {
+        if (card === null) {
+          return `<div class="card-slot empty">Slot ${i + 1}: Empty</div>`;
+        }
+        return `<div class="card-slot">${formatCardName(card)}</div>`;
+      })
+      .join('');
+  }
+  
+  // Update point row
+  const pointRowEl = document.getElementById('point-row');
+  if (pointRowEl) {
+    pointRowEl.innerHTML = game.pointRow.cards
+      .map((card: any, i: number) => {
+        if (card === null) {
+          return `<div class="card-slot empty">Slot ${i + 1}: Empty</div>`;
+        }
+        return `<div class="card-slot">${card.points} Points</div>`;
+      })
+      .join('');
   }
 }
 
@@ -482,6 +718,9 @@ function updateGameUI(game: any) {
   
   // Enable/disable action buttons based on turn and game state
   updateActionButtons(isMyTurn, gameEnded);
+  
+  // Update player display
+  updatePlayerDisplay(game);
   
   // Clear action in progress flag when state updates
   actionInProgress = false;
