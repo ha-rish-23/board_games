@@ -27,33 +27,74 @@ body {
   padding: 0;
 }
 
-/* ==================== TYPOGRAPHY ==================== */
+/* ==================== TYPOGRAPHY HIERARCHY ==================== */
+/*
+ * Level 1: Game Title - 32px, bold - Main game title
+ * Level 2: Section Headers - 22px, bold - Major sections (Create Room, Game State)
+ * Level 3: Subsection Headers - 18px, normal - Card areas, player sections
+ * Level 4: Card Titles & Values - 16px, bold - Point values, card names
+ * Level 5: Body Text - 15px, normal - Descriptions, labels, general text
+ * Level 6: Supporting Text - 14px, normal - Hints, secondary info
+ * Level 7: Small Text - 13px, normal - Timestamps, metadata
+ */
 
+/* Level 1: Game Title */
 h1 {
-  font-size: 28px;
-  font-weight: normal;
+  font-size: 32px;
+  font-weight: bold;
   color: #3A2E1E;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
+  line-height: 1.3;
 }
 
+/* Level 2: Section Headers */
 h2 {
-  font-size: 24px;
-  font-weight: normal;
+  font-size: 22px;
+  font-weight: bold;
   color: #3A2E1E;
   margin-bottom: 20px;
+  letter-spacing: 0.3px;
+  line-height: 1.4;
 }
 
+/* Level 3: Subsection Headers */
 h3 {
   font-size: 18px;
   font-weight: normal;
   color: #3A2E1E;
   margin-bottom: 15px;
+  line-height: 1.4;
 }
 
+/* Level 4: Card Titles & Important Values */
 h4 {
   font-size: 16px;
-  font-weight: normal;
+  font-weight: bold;
   color: #3A2E1E;
+  line-height: 1.4;
+}
+
+/* Level 5: Body Text (default) */
+body {
+  font-size: 15px;
+  font-weight: normal;
+  line-height: 1.5;
+}
+
+/* Level 6: Supporting Text */
+.text-secondary {
+  font-size: 14px;
+  font-weight: normal;
+  color: #6B5D50;
+  line-height: 1.5;
+}
+
+/* Level 7: Small Text */
+.text-small {
+  font-size: 13px;
+  font-weight: normal;
+  color: #6B5D50;
+  line-height: 1.4;
 }
 
 /* ==================== TABS (SETUP SCREENS) ==================== */
@@ -100,8 +141,9 @@ h4 {
 }
 
 .subtitle {
-  color: #6B5D50;
   font-size: 16px;
+  font-weight: normal;
+  color: #6B5D50;
   margin-bottom: 30px;
   text-align: center;
   line-height: 1.6;
@@ -116,8 +158,10 @@ h4 {
 .form-group label {
   display: block;
   font-size: 15px;
+  font-weight: bold;
   color: #3A2E1E;
   margin-bottom: 8px;
+  line-height: 1.4;
 }
 
 .form-group input {
@@ -194,11 +238,13 @@ h4 {
 }
 
 #room-info h3 {
+  font-size: 18px;
+  font-weight: bold;
   color: #3A2E1E;
   margin-bottom: 15px;
   border-bottom: 2px solid #8B7355;
   padding-bottom: 10px;
-  font-size: 18px;
+  line-height: 1.4;
 }
 
 .room-code {
@@ -277,14 +323,17 @@ h4 {
   padding: 10px 16px;
   border: 2px solid #8B7355;
   background: #EDE4D3;
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: bold;
   text-align: center;
+  line-height: 1.4;
 }
 
 .turn-active {
   background: #D4C4A8;
   border-color: #6B5D50;
   font-weight: bold;
+  font-size: 16px;
 }
 
 .turn-waiting {
@@ -304,9 +353,11 @@ h4 {
   background: #8B6B47;
   color: #F5F0E8;
   border: 1px solid #6B5D50;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: bold;
   vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Status Messages */
@@ -338,10 +389,12 @@ h4 {
 .game-meta {
   padding: 8px 30px;
   font-size: 14px;
+  font-weight: normal;
   color: #6B5D50;
   text-align: center;
   background: #F5F0E8;
   border-bottom: 1px solid #D4C4A8;
+  line-height: 1.5;
 }
 
 /* Action Buttons */
@@ -382,11 +435,13 @@ h4 {
 }
 
 .action-log h3 {
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: bold;
   color: #3A2E1E;
   margin-bottom: 10px;
   border-bottom: 1px solid #8B7355;
   padding-bottom: 5px;
+  line-height: 1.4;
 }
 
 #action-log-content {
@@ -403,7 +458,10 @@ h4 {
 .log-entry {
   padding: 4px 0;
   border-bottom: 1px solid #E8DCC4;
+  font-size: 13px;
+  font-weight: normal;
   color: #4A3F35;
+  line-height: 1.5;
 }
 
 .log-entry:last-child {
@@ -413,9 +471,12 @@ h4 {
 .log-empty {
   padding: 20px;
   text-align: center;
+  font-size: 14px;
+  font-weight: normal;
   color: #8B7355;
   font-style: italic;
   font-family: Georgia, serif;
+  line-height: 1.5;
 }
 
 #game-status {
@@ -446,11 +507,13 @@ h4 {
 
 .player-section h4,
 .board-section h4 {
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: bold;
   margin-bottom: 10px;
   color: #3A2E1E;
   border-bottom: 1px solid #D4C4A8;
   padding-bottom: 5px;
+  line-height: 1.4;
 }
 
 .caravan-display,
@@ -469,8 +532,10 @@ h4 {
   margin: 4px;
   background: #E8DCC4;
   border: 1px solid #8B7355;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: bold;
   color: #3A2E1E;
+  line-height: 1.4;
 }
 
 .card-item {
@@ -480,7 +545,9 @@ h4 {
   background: #F5F0E8;
   border: 2px solid #8B7355;
   font-size: 14px;
+  font-weight: normal;
   color: #3A2E1E;
+  line-height: 1.4;
 }
 
 .card-slot {
@@ -489,16 +556,20 @@ h4 {
   margin: 6px;
   background: #F5F0E8;
   border: 2px solid #8B7355;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: bold;
   color: #3A2E1E;
   min-width: 120px;
   text-align: center;
+  line-height: 1.4;
 }
 
 .card-slot.empty {
   background: #E8DCC4;
   color: #8B7355;
   border-style: dashed;
+  font-weight: normal;
+  font-size: 14px;
 }
 
 .shared-board {
@@ -545,8 +616,10 @@ h4 {
 
 .modal-header h3 {
   margin: 0;
-  font-size: 20px;
+  font-size: 22px;
+  font-weight: bold;
   color: #3A2E1E;
+  line-height: 1.3;
 }
 
 .modal-close {

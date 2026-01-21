@@ -51,14 +51,14 @@ function initApp() {
         </form>
         <div id="room-info" style="display:none;">
           <h3>Room Created</h3>
-          <p><strong>Share this Room Code with other players:</strong></p>
+          <p class="text-secondary"><strong>Share this Room Code with other players:</strong></p>
           <div style="margin: 15px 0;">
             <div class="room-code" id="room-code-display"></div>
           </div>
           <div id="players-waiting" style="margin-top: 20px;">
             <h4>Players Connected: <span id="connected-count">1</span>/<span id="total-count">3</span></h4>
             <div id="player-list"></div>
-            <p style="margin-top: 15px; color: #6B5D50; font-size: 14px;">Game will start automatically when all players join.</p>
+            <p class="text-secondary" style="margin-top: 15px;">Game will start automatically when all players join.</p>
           </div>
         </div>
       </div>
@@ -82,12 +82,12 @@ function initApp() {
         <h2>Game in Progress</h2>
         
         <div id="player-identity" class="info-panel">
-          <strong>You are:</strong> <span id="your-player-name"></span>
-          <span id="host-indicator" style="display:none;" class="badge-host">HOST</span>
+          <span style="font-size: 15px; font-weight: bold;">You are:</span> <span id="your-player-name" style="font-size: 16px; font-weight: bold;"></span>
+          <span id="host-indicator" style="display:none;" class="badge-host">Host</span>
         </div>
         
         <div id="turn-status" class="info-panel turn-indicator">
-          <strong id="turn-message">Waiting...</strong>
+          <span id="turn-message">Waiting...</span>
         </div>
         
         <div id="status-message" class="status-message"></div>
