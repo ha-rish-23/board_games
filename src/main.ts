@@ -479,11 +479,20 @@ async function handleGameAction(actionType: string) {
         
       case 'take-merchant':
         await showCardSelectionModal('Acquire merchant card', 'merchant-row', async (cardIndex: string) => {
+          const game = isHost ? (gameRoom as any).game : (gameClient as any)?.lastGameState;
+          const idx = parseInt(cardIndex);
+          const card = game?.merchantRow.cards[idx];
+          if (!card) {
+            showStatusMessage('Invalid card selection', 'error');
+            actionInProgress = false;
+            return;
+          }
           action = {
             type: ActionType.AcquireMerchantCard,
             playerId: currentPlayerId,
             timestamp: Date.now(),
-            merchantRowIndex: parseInt(cardIndex)
+            rowIndex: idx,
+            cardId: card.id
           };
           await executeAction(action);
         });
@@ -491,11 +500,22 @@ async function handleGameAction(actionType: string) {
         
       case 'claim-vp':
         await showCardSelectionModal('Claim point card', 'point-row', async (cardIndex: string) => {
+          const game = isHost ? (gameRoom as any).game : (gameClient as any)?.lastGameState;
+          const idx = parseInt(cardIndex);
+          const card = game?.pointCardRow.cards[idx];
+          if (!card) {
+            showStatusMessage('Invalid card selection', 'error');
+            actionInProgress = false;
+            return;
+          }
+          // Use the card's cost as payment (game engine will validate)
           action = {
             type: ActionType.ClaimPointCard,
             playerId: currentPlayerId,
             timestamp: Date.now(),
-            pointRowIndex: parseInt(cardIndex)
+            rowIndex: idx,
+            cardId: card.id,
+            payment: card.cost
           };
           await executeAction(action);
         });
@@ -608,7 +628,7 @@ function showCardSelectionModal(title: string, source: string, onSelect: (select
 function formatCardName(card: any): string {
   if (card.type === 'PRODUCE') {
     const crystals = Object.entries(card.produces)
-      .filter(([_, count]) => count > 0)
+      .filter(([_, count]) => (count as number) > 0)
       .map(([color, count]) => `${count} ${color}`)
       .join(', ');
     return `Produce: ${crystals}`;
