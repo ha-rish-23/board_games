@@ -347,6 +347,16 @@ async function handleJoinRoom(event: Event) {
       isHost = false;  // Mark that we are NOT the host
     });
     
+    gameClient.on('player-assigned', (assignedPlayerId: string, assignedName: string) => {
+      // Update our player ID to match the one assigned by host
+      currentPlayerId = assignedPlayerId;
+      console.log('[Main] Assigned player ID:', assignedPlayerId);
+      const playerNameEl = document.getElementById('your-player-name');
+      if (playerNameEl) {
+        playerNameEl.textContent = assignedName;
+      }
+    });
+    
     gameClient.on('disconnected', () => {
       showStatusMessage('Disconnected from room', 'error');
     });

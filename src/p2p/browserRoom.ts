@@ -525,6 +525,19 @@ export class P2PGameRoom {
     
     this.emit('peer-connected', playerInfo);
     
+    // Send player assignment notification FIRST
+    const assignmentMsg = {
+      type: 'PLAYER_ASSIGNED',
+      messageId: `assign_${Date.now()}`,
+      gameId: this.game.id,
+      senderId: this.hostPeerId,
+      turnNumber: this.game.turnNumber,
+      timestamp: Date.now(),
+      assignedPlayerId: availablePlayer.id,
+      playerName: availablePlayer.name
+    };
+    this.sendToPeer(peerId, assignmentMsg);
+    
     // Check if all players connected - if so, start the game
     if (this.game.phase === GamePhase.Setup && this.playerConnections.size === this.game.players.length) {
       this.game.phase = GamePhase.Playing;

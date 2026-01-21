@@ -76,6 +76,7 @@ export type ClientEventMap = {
   'host-disconnected': () => void;
   'resync-complete': (game: Game) => void;
   'player-status-changed': (playerId: string, status: 'connected' | 'disconnected') => void;
+  'player-assigned': (assignedPlayerId: string, playerName: string) => void;
 };
 
 // ============================================================================
@@ -482,7 +483,9 @@ export class P2PGameClient {
         
       default:
         // Check for custom message types
-        if ((message as any).type === 'RESYNC_RESPONSE') {
+        if ((message as any).type === 'PLAYER_ASSIGNED') {
+          this.handlePlayerAssigned(message as any);
+        } else if ((message as any).type === 'RESYNC_RESPONSE') {
           this.handleResyncResponse(message as any);
         } else if ((message as any).type === 'PLAYER_STATUS') {
           this.handlePlayerStatus(message as any);
@@ -591,6 +594,16 @@ export class P2PGameClient {
   private handleGameEnded(message: any): void {
     console.log('[Client] Game ended:', message.reason);
     this.disconnect();
+  }
+  
+  /**
+   * Handle PLAYER_ASSIGNED notification from host.
+   * This tells the client what their actual player ID is in the game.
+   */
+  private handlePlayerAssigned(message: any): void {
+    console.log('[Client] Player assigned:', message.assignedPlayerId);
+    this.playerId = message.assignedPlayerId;
+    this.emit('player-assigned', message.assignedPlayerId, message.playerName);
   }
   
   // ==========================================================================
