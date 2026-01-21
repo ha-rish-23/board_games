@@ -585,7 +585,8 @@ function showCardSelectionModal(title: string, source: string, onSelect: (select
     } else {
       items.forEach((item, index) => {
         const button = document.createElement('button');
-        button.className = 'btn-action card-select-btn';
+        const cardClass = getCardTypeClass(item);
+        button.className = `btn-action card-select-btn ${cardClass}`;
         button.style.width = '100%';
         button.style.marginBottom = '10px';
         
@@ -637,9 +638,22 @@ function formatCardName(card: any): string {
   } else if (card.type === 'TRADE') {
     return 'Trade Card';
   } else if (card.points !== undefined) {
-    return `${card.points} Points`;
+    return `<span class="card-points">${card.points} VP</span>`;
   }
   return 'Card';
+}
+
+function getCardTypeClass(card: any): string {
+  if (card.points !== undefined) {
+    return 'card-item point-card';
+  } else if (card.type === 'PRODUCE') {
+    return 'card-item merchant-card merchant-produce';
+  } else if (card.type === 'UPGRADE') {
+    return 'card-item merchant-card merchant-upgrade';
+  } else if (card.type === 'TRADE') {
+    return 'card-item merchant-card merchant-trade';
+  }
+  return 'card-item merchant-card';
 }
 
 function updatePlayerDisplay(game: any) {
@@ -663,7 +677,10 @@ function updatePlayerDisplay(game: any) {
       handEl.innerHTML = '<span style="color: #8B7355;">No cards</span>';
     } else {
       handEl.innerHTML = myPlayer.hand
-        .map((card: any) => `<div class="card-item">${formatCardName(card)}</div>`)
+        .map((card: any) => {
+          const cardClass = getCardTypeClass(card);
+          return `<div class="${cardClass} playable">${formatCardName(card)}</div>`;
+        })
         .join('');
     }
   }
@@ -675,7 +692,10 @@ function updatePlayerDisplay(game: any) {
       playAreaEl.innerHTML = '<span style="color: #8B7355;">No cards played</span>';
     } else {
       playAreaEl.innerHTML = myPlayer.playArea
-        .map((card: any) => `<div class="card-item">${formatCardName(card)}</div>`)
+        .map((card: any) => {
+          const cardClass = getCardTypeClass(card);
+          return `<div class="${cardClass} unplayable">${formatCardName(card)}</div>`;
+        })
         .join('');
     }
   }
@@ -686,9 +706,10 @@ function updatePlayerDisplay(game: any) {
     merchantRowEl.innerHTML = game.merchantRow.cards
       .map((card: any, i: number) => {
         if (card === null) {
-          return `<div class="card-slot empty">Slot ${i + 1}: Empty</div>`;
+          return `<div class="card-slot empty">Empty</div>`;
         }
-        return `<div class="card-slot">${formatCardName(card)}</div>`;
+        const cardClass = getCardTypeClass(card);
+        return `<div class="${cardClass}">${formatCardName(card)}</div>`;
       })
       .join('');
   }
@@ -699,9 +720,9 @@ function updatePlayerDisplay(game: any) {
     pointRowEl.innerHTML = game.pointRow.cards
       .map((card: any, i: number) => {
         if (card === null) {
-          return `<div class="card-slot empty">Slot ${i + 1}: Empty</div>`;
+          return `<div class="card-slot empty">Empty</div>`;
         }
-        return `<div class="card-slot">${card.points} Points</div>`;
+        return `<div class="card-item point-card"><span class="card-points">${card.points} VP</span></div>`;
       })
       .join('');
   }

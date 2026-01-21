@@ -329,21 +329,27 @@ body {
   line-height: 1.4;
 }
 
+/* Your turn - calm green background */
 .turn-active {
-  background: #D4C4A8;
-  border-color: #6B5D50;
+  background: #D8E8D8;
+  border-color: #6B8B6B;
+  color: #2A4A2A;
   font-weight: bold;
   font-size: 16px;
 }
 
+/* Waiting - neutral brown */
 .turn-waiting {
   background: #F5F0E8;
   color: #6B5D50;
+  border-color: #8B7355;
 }
 
+/* Game ended - muted gray-brown */
 .turn-ended {
-  background: #B8A894;
-  color: #4A3F35;
+  background: #D4C8BC;
+  color: #5A4F45;
+  border-color: #8B7355;
 }
 
 .badge-host {
@@ -360,30 +366,39 @@ body {
   letter-spacing: 0.5px;
 }
 
-/* Status Messages */
+/* Status Messages - subtle, meaningful colors */
 .status-message {
   margin: 15px 30px;
-  padding: 12px 15px;
+  padding: 14px 18px;
   border: 2px solid #8B7355;
   display: none;
+  font-size: 15px;
+  font-weight: normal;
+  line-height: 1.5;
 }
 
+/* Success - calm green accent */
 .status-success {
-  background: #E8DCC4;
-  color: #3A2E1E;
-  border-color: #6B5D50;
+  background: #E8F0E8;
+  color: #2A4A2A;
+  border-color: #6B8B6B;
+  border-left-width: 4px;
 }
 
+/* Error - muted red, still readable */
 .status-error {
-  background: #D4C4A8;
-  color: #4A3F35;
-  border-color: #8B6B47;
+  background: #F0E8E8;
+  color: #5A3A3A;
+  border-color: #A87A6B;
+  border-left-width: 4px;
 }
 
+/* Info - neutral brown */
 .status-info {
   background: #F5F0E8;
   color: #4A3F35;
   border-color: #A89276;
+  border-left-width: 4px;
 }
 
 .game-meta {
@@ -522,46 +537,213 @@ body {
 .point-display {
   background: #FFFEF8;
   border: 2px solid #D4C4A8;
-  padding: 12px;
-  min-height: 50px;
+  padding: 14px;
+  min-height: 60px;
+}
+
+/* Caravan has softer linen-like background */
+.caravan-display {
+  background: linear-gradient(to bottom, #FFFEF8 0%, #F5F0E8 100%);
+  border: 2px solid #C9BCA8;
+}
+
+/* Point card row has warmer background */
+.point-display {
+  background: linear-gradient(to bottom, #FAF5E8 0%, #F5F0E8 100%);
+  border: 2px solid #C9A985;
 }
 
 .crystal {
-  display: inline-block;
-  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
   margin: 4px;
-  background: #E8DCC4;
-  border: 1px solid #8B7355;
+  background: #FFFEF8;
+  border: 2px solid #8B7355;
   font-size: 14px;
   font-weight: bold;
   color: #3A2E1E;
   line-height: 1.4;
+  border-radius: 0;
 }
 
+/* Crystal color indicators - gem shapes */
+.crystal-yellow::before,
+.crystal-green::before,
+.crystal-red::before,
+.crystal-blue::before,
+.crystal-turquoise::before,
+.crystal-magenta::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.crystal-yellow::before {
+  background: #D4AF37;
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.crystal-green::before {
+  background: #2E8B57;
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+.crystal-red::before {
+  background: #C44536;
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+.crystal-blue::before,
+.crystal-turquoise::before {
+  background: #00B4D8;
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.4);
+}
+
+.crystal-magenta::before {
+  background: #9B59B6;
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Base card styling */
 .card-item {
   display: inline-block;
-  padding: 8px 12px;
-  margin: 4px;
+  padding: 10px 14px;
+  margin: 6px;
   background: #F5F0E8;
   border: 2px solid #8B7355;
   font-size: 14px;
   font-weight: normal;
   color: #3A2E1E;
   line-height: 1.4;
+  min-width: 140px;
+  box-shadow: 2px 2px 4px rgba(58, 46, 30, 0.15);
+}
+
+/* Point cards - larger and more prominent with gold accents */
+.card-item.point-card {
+  background: linear-gradient(to bottom, #F5EFE0 0%, #F5F0E8 100%);
+  border: 3px solid #8B6B47;
+  padding: 12px 16px;
+  min-width: 160px;
+  box-shadow: 3px 3px 6px rgba(139, 107, 71, 0.3);
+}
+
+.card-item.point-card .card-points {
+  font-size: 20px;
+  font-weight: bold;
+  color: #8B6B47;
+  display: block;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+/* Merchant cards - type-specific accents */
+.card-item.merchant-card {
+  background: #F0EFE8;
+  border-top-width: 4px;
+  padding-top: 12px;
+}
+
+.card-item.merchant-produce {
+  border-top-color: #7A9B6E;
+}
+
+.card-item.merchant-upgrade {
+  border-top-color: #6B8AA8;
+}
+
+.card-item.merchant-trade {
+  border-top-color: #A67C52;
+}
+
+/* Playable vs unplayable visual states */
+.card-item.playable {
+  background: #FFFEF8;
+  border-width: 3px;
+  border-color: #6B5D50;
+  box-shadow: 2px 2px 6px rgba(107, 93, 80, 0.3);
+}
+
+.card-item.unplayable {
+  background: #E8DCC4;
+  border-color: #B8A894;
+  opacity: 0.75;
+  color: #6B5D50;
+}
+
+/* Card cost indicators - visual tokens */
+.card-cost {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.card-cost .cost-token {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  transform: rotate(45deg);
+  display: inline-block;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.cost-token.token-yellow {
+  background: #D4AF37;
+}
+
+.cost-token.token-green {
+  background: #2E8B57;
+}
+
+.cost-token.token-red {
+  background: #C44536;
+}
+
+.cost-token.token-blue {
+  background: #00B4D8;
+}
+
+.cost-token.token-magenta {
+  background: #9B59B6;
 }
 
 .card-slot {
   display: inline-block;
-  padding: 10px 14px;
+  padding: 12px 16px;
   margin: 6px;
   background: #F5F0E8;
   border: 2px solid #8B7355;
   font-size: 15px;
   font-weight: bold;
   color: #3A2E1E;
-  min-width: 120px;
+  min-width: 140px;
   text-align: center;
   line-height: 1.4;
+  box-shadow: 2px 2px 4px rgba(58, 46, 30, 0.15);
+}
+
+/* Point card slots - larger and more prominent */
+.point-display .card-slot {
+  background: linear-gradient(to bottom, #F5EFE0 0%, #F5F0E8 100%);
+  border: 3px solid #8B6B47;
+  min-width: 160px;
+  padding: 14px 18px;
+  box-shadow: 3px 3px 6px rgba(139, 107, 71, 0.25);
+}
+
+/* Merchant card slots */
+.merchant-display .card-slot {
+  background: #F0EFE8;
+  border-top-width: 4px;
 }
 
 .card-slot.empty {
