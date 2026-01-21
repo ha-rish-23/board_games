@@ -14,6 +14,7 @@ import { ActionType, GameAction } from './types/domain';
 let gameRoom: P2PGameRoom | null = null;
 let gameClient: P2PGameClient | null = null;
 let currentPlayerId: string = '';
+let isHost: boolean = false;
 
 // Main application initialization
 function initApp() {
@@ -38,6 +39,10 @@ function initApp() {
       <div class="tab-content active" id="create-tab">
         <h2>Create a Game Room</h2>
         <form id="create-form">
+          <div class="form-group">
+            <label>Your Name:</label>
+            <input type="text" id="host-name-input" placeholder="Enter your name" required />
+          </div>
           <div class="form-group">
             <label>Number of Players:</label>
             <input type="number" id="player-count" min="2" max="5" value="3" />
@@ -151,7 +156,14 @@ function switchTab(tabName: string) {
 async function handleCreateRoom(event: Event) {
   event.preventDefault();
   
+  const hostName = (document.getElementById('host-name-input') as HTMLInputElement).value.trim();
   const playerCount = parseInt((document.getElementById('player-count') as HTMLInputElement).value);
+  
+  if (!hostName) {
+    alert('Please enter your name');
+    return;
+  }
+  
   const roomInfo = document.getElementById('room-info');
   const codeDisplay = document.getElementById('room-code-display');
   
@@ -174,6 +186,7 @@ async function handleCreateRoom(event: Event) {
       const game = (gameRoom as any).game;
       if (game && game.players && game.players.length > 0) {
         currentPlayerId = game.players[0].id;
+        isHost = true;  // Mark that we are the host
         const playerNameEl = document.getElementById('your-player-name');
         if (playerNameEl) {
           playerNameEl.textContent = game.players[0].name;
@@ -220,8 +233,8 @@ async function handleCreateRoom(event: Event) {
       showStatusMessage(`Error: ${error.message}`, 'error');
     });
     
-    // Generate player names
-    const playerNames = Array.from({ length: playerCount }, (_, i) => `Player ${i + 1}`);
+    // Generate player names (host is first player)
+    const playerNames = [hostName, ...Array.from({ length: playerCount - 1 }, (_, i) => `Player ${i + 2}`)];
     
     // Create room
     await gameRoom.createRoom(playerNames);
@@ -297,6 +310,7 @@ async function handleJoinRoom(event: Event) {
         }
         showStatusMessage(`Connected to room ${roomCode}`, 'success');
       }
+      isHost = false;  // Mark that we are NOT the host
     });
     
     gameClient.on('disconnected', () => {
@@ -363,13 +377,18 @@ async function handleGameAction(actionType: string) {
     return;
   }
   
-  if (!gameClient) {
-    showStatusMessage('Not connected to a room', 'error');
+  if (!currentPlayerId) {
+    showStatusMessage('Player ID not set', 'error');
     return;
   }
   
-  if (!currentPlayerId) {
-    showStatusMessage('Player ID not set', 'error');
+  if (isHost && !gameRoom) {
+    showStatusMessage('Host room not initialized', 'error');
+    return;
+  }
+  
+  if (!isHost && !gameClient) {
+    showStatusMessage('Not connected to a room', 'error');
     return;
   }
   
@@ -409,8 +428,27 @@ async function handleGameAction(actionType: string) {
         return;
     }
     
-    showStatusMessage('Sending action to host...', 'info');
-    await gameClient.sendAction(action);
+    if (isHost) {
+      // Host processes action directly
+      showStatusMessage('Processing action...', 'info');
+      const result = (gameRoom as any).processAction(action);
+      if (result.valid) {
+        showStatusMessage('Action processed successfully', 'success');
+        addActionToLog(action, currentPlayerId);
+      } else {
+        showStatusMessage(`Invalid action: ${result.error}`, 'error');
+      }
+      actionInProgress = false;
+    } else {
+      // Client sends action to host
+      if (!gameClient) {
+        showStatusMessage('Not connected to room', 'error');
+        actionInProgress = false;
+        return;
+      }
+      showStatusMessage('Sending action to host...', 'info');
+      await gameClient.sendAction(action);
+    }
     
   } catch (error) {
     showStatusMessage(`Failed to send action: ${(error as Error).message}`, 'error');

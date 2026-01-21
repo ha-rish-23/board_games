@@ -550,7 +550,7 @@ export class P2PGameRoom {
    * Process action via game engine.
    * ALL VALIDATION AND LOGIC IN ENGINE - NOT HERE.
    */
-  private processAction(action: GameAction): {
+  processAction(action: GameAction): {
     valid: boolean;
     error?: string;
     code?: string;
