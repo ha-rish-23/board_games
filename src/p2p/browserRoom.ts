@@ -121,6 +121,8 @@ export class P2PGameRoom {
   private autoSkipTimers: Map<string, NodeJS.Timeout> = new Map();
   private readonly PEER_RECONNECT_GRACE_PERIOD = 15000; // 15 seconds
   private isProcessingAction: boolean = false; // Race condition protection
+  private keepaliveInterval?: number;
+  private visibilityHandler?: () => void;
   
   // Events
   private eventListeners: Map<keyof RoomEventMap, Set<Function>> = new Map();
@@ -298,6 +300,8 @@ export class P2PGameRoom {
         console.log('[Room] ✓ Connected to signaling server');
         console.log('[Room] ✓ Ready to accept connections');
         this.setupPeerListeners();
+        this.setupKeepalive();
+        this.setupVisibilityHandler();
         resolve();
       });
       
@@ -316,6 +320,48 @@ export class P2PGameRoom {
     });
   }
   
+  /**
+   * Setup keepalive ping to prevent connection timeout.
+   */
+  private setupKeepalive(): void {
+    // Send ping every 25 seconds to keep connection alive
+    this.keepaliveInterval = window.setInterval(() => {
+      if (this.peer && !this.peer.destroyed) {
+        // Ping all connected peers
+        this.playerConnections.forEach((playerInfo) => {
+          const conn = Array.from(this.dataConnections.values())
+            .find(c => c.peer === playerInfo.peerId);
+          if (conn && conn.open) {
+            try {
+              conn.send({ type: 'PING', timestamp: Date.now() });
+            } catch (e) {
+              console.warn('[Room] Keepalive ping failed:', e);
+            }
+          }
+        });
+      }
+    }, 25000);
+  }
+
+  /**
+   * Setup visibility change handler to prevent disconnections.
+   */
+  private setupVisibilityHandler(): void {
+    this.visibilityHandler = () => {
+      if (document.hidden) {
+        console.log('[Room] Tab hidden - maintaining connections');
+      } else {
+        console.log('[Room] Tab visible - checking connections');
+        // Reconnect if peer disconnected
+        if (this.peer && this.peer.disconnected) {
+          console.log('[Room] Reconnecting peer...');
+          this.peer.reconnect();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+  }
+
   /**
    * Save room info to localStorage for recovery.
    */
@@ -950,6 +996,18 @@ export class P2PGameRoom {
    */
   close(): void {
     console.log('[Room] Closing room');
+    
+    // Clear keepalive
+    if (this.keepaliveInterval) {
+      clearInterval(this.keepaliveInterval);
+      this.keepaliveInterval = undefined;
+    }
+    
+    // Remove visibility handler
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = undefined;
+    }
     
     // Clear timers
     this.autoSkipTimers.forEach(timer => clearTimeout(timer));
