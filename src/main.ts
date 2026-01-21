@@ -28,7 +28,7 @@ function initApp() {
   // Render UI
   app.innerHTML = `
     <div class="container">
-      <h1>🎮 Century: Golem Edition</h1>
+      <h1>Century: Golem Edition</h1>
       <p class="subtitle">Peer-to-Peer Multiplayer - No Server Required</p>
       
       <div class="tabs">
@@ -50,15 +50,15 @@ function initApp() {
           <button type="submit" class="btn-primary">Create Room</button>
         </form>
         <div id="room-info" style="display:none;">
-          <h3>✅ Room Created!</h3>
+          <h3>Room Created</h3>
           <p><strong>Share this Room Code with other players:</strong></p>
           <div style="margin: 15px 0;">
             <div class="room-code" id="room-code-display"></div>
           </div>
-          <div id="players-waiting" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+          <div id="players-waiting" style="margin-top: 20px;">
             <h4>Players Connected: <span id="connected-count">1</span>/<span id="total-count">3</span></h4>
             <div id="player-list"></div>
-            <p style="margin-top: 15px; opacity: 0.8; font-size: 0.9em;">Game will start automatically when all players join.</p>
+            <p style="margin-top: 15px; color: #6B5D50; font-size: 14px;">Game will start automatically when all players join.</p>
           </div>
         </div>
       </div>

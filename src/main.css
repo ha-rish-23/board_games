@@ -1,292 +1,409 @@
-/* Main Application Styles */
+/* ==================== TABLETOP BOARD GAME DESIGN ==================== */
+/* Physical board game aesthetic - no modern web app look */
 
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
 body {
-  padding: 10px;
+  background: #8B7355;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #3A2E1E;
+  line-height: 1.5;
+  padding: 20px;
+  min-height: 100vh;
 }
+
+/* ==================== PAGE CONTAINER ==================== */
 
 .container {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 15px;
+  background: #E8DCC4;
+  border: 3px solid #6B5D50;
+  box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 0;
 }
+
+/* ==================== TYPOGRAPHY ==================== */
 
 h1 {
-  color: #333;
-  margin-bottom: 10px;
-  font-size: 2.5em;
+  font-size: 28px;
+  font-weight: normal;
+  color: #3A2E1E;
+  letter-spacing: 1px;
 }
 
-.subtitle {
-  color: #666;
-  margin-bottom: 30px;
-  font-size: 1.1em;
+h2 {
+  font-size: 24px;
+  font-weight: normal;
+  color: #3A2E1E;
+  margin-bottom: 20px;
 }
 
-/* Tabs */
+h3 {
+  font-size: 18px;
+  font-weight: normal;
+  color: #3A2E1E;
+  margin-bottom: 15px;
+}
+
+h4 {
+  font-size: 16px;
+  font-weight: normal;
+  color: #3A2E1E;
+}
+
+/* ==================== TABS (SETUP SCREENS) ==================== */
+
 .tabs {
   display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid #8B7355;
+  background: #D4C4A8;
 }
 
 .tab-btn {
+  flex: 1;
   background: none;
   border: none;
-  padding: 15px 30px;
-  font-size: 1.1em;
+  padding: 15px 20px;
+  font-family: Georgia, serif;
+  font-size: 16px;
+  color: #4A3F35;
   cursor: pointer;
-  color: #666;
   border-bottom: 3px solid transparent;
-  transition: all 0.3s;
-}
-
-.tab-btn:hover {
-  color: #667eea;
 }
 
 .tab-btn.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
-  font-weight: 600;
+  background: #F5F0E8;
+  border-bottom-color: #6B5D50;
+  color: #3A2E1E;
 }
 
-/* Tab Content */
+.tab-btn:hover {
+  background: #E8DCC4;
+}
+
+/* ==================== TAB CONTENT ==================== */
+
 .tab-content {
   display: none;
+  padding: 30px;
+  background: #F5F0E8;
+  border-bottom: 2px solid #8B7355;
 }
 
 .tab-content.active {
   display: block;
 }
 
-.tab-content h2 {
-  margin-bottom: 20px;
-  color: #333;
+.subtitle {
+  color: #6B5D50;
+  font-size: 16px;
+  margin-bottom: 30px;
+  text-align: center;
+  line-height: 1.6;
 }
 
-/* Forms */
+/* ==================== FORMS ==================== */
+
 .form-group {
   margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
+  font-size: 15px;
+  color: #3A2E1E;
   margin-bottom: 8px;
-  color: #333;
-  font-weight: 500;
 }
 
 .form-group input {
   width: 100%;
-  padding: 12px;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 1em;
-  transition: border-color 0.3s;
+  padding: 12px 14px;
+  border: 2px solid #8B7355;
+  background: #FFFFFF;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  color: #3A2E1E;
+  min-height: 44px;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #6B5D50;
+  background: #FFFEF8;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* Buttons */
+/* ==================== BUTTONS ==================== */
+
 .btn-primary,
 .btn-action {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 15px 30px;
-  font-size: 1em;
-  border-radius: 6px;
+  background: #8B6B47;
+  color: #F5F0E8;
+  border: 2px solid #6B5D50;
+  padding: 14px 20px;
+  font-family: Georgia, serif;
+  font-size: 15px;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
-  font-weight: 600;
-  min-height: 48px;
+  box-shadow: 2px 2px 4px rgba(58, 46, 30, 0.2);
+  width: 100%;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-primary:hover:not(:disabled),
 .btn-action:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  background: #7A5A37;
 }
 
 .btn-primary:active:not(:disabled),
 .btn-action:active:not(:disabled) {
-  transform: translateY(0);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.3);
+  background: #6B4F30;
 }
 
 .btn-action {
-  padding: 12px 20px;
-  font-size: 0.95em;
+  padding: 12px 16px;
+  width: auto;
 }
 
 .btn-action:disabled,
 .btn-disabled {
-  opacity: 0.4;
+  background: #D4C4A8;
+  color: #9B8B7A;
+  border-color: #B8A894;
   cursor: not-allowed;
-  background: #999;
-}
-
-.btn-action:disabled:hover,
-.btn-disabled:hover {
-  transform: none;
+  opacity: 1;
   box-shadow: none;
 }
 
-/* Room Info */
+/* ==================== ROOM INFO ==================== */
+
 #room-info {
-  background: #f0f7ff;
-  border-left: 4px solid #667eea;
-  padding: 20px;
+  background: #F5F0E8;
+  border: 2px solid #8B7355;
+  padding: 25px;
   margin-top: 20px;
-  border-radius: 4px;
+  box-shadow: 2px 2px 6px rgba(58, 46, 30, 0.15);
 }
 
 #room-info h3 {
-  color: #667eea;
+  color: #3A2E1E;
   margin-bottom: 15px;
+  border-bottom: 2px solid #8B7355;
+  padding-bottom: 10px;
+  font-size: 18px;
 }
 
 .room-code {
-  background: white;
+  background: #EDE4D3;
+  border: 2px solid #8B7355;
   padding: 20px;
-  border-radius: 8px;
-  font-family: 'Courier New', monospace;
-  font-size: 1.8em;
-  font-weight: bold;
-  color: #667eea;
-  margin: 10px 0;
   text-align: center;
-  border: 3px solid #667eea;
-  letter-spacing: 0.1em;
+  font-family: 'Courier New', monospace;
+  font-size: 32px;
+  letter-spacing: 4px;
+  color: #3A2E1E;
+  margin: 20px 0;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Game Area */
-#game-area {
-  margin-top: 30px;
+#players-waiting {
+  background: #FFFEF8;
+  border: 2px solid #8B7355;
   padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  margin-top: 20px;
 }
 
+#players-waiting h4 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: #3A2E1E;
+  border-bottom: 1px solid #D4C4A8;
+  padding-bottom: 8px;
+}
+
+#player-list {
+  border: 1px solid #D4C4A8;
+  background: #F5F0E8;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+#player-list div {
+  padding: 8px 10px;
+  border-bottom: 1px solid #E8DCC4;
+  color: #4A3F35;
+  font-size: 15px;
+}
+
+#player-list div:last-child {
+  border-bottom: none;
+}
+
+/* ==================== GAME AREA ==================== */
+
+#game-area {
+  padding: 0;
+  background: #E8DCC4;
+}
+
+/* Header Zone */
+.board-header {
+  background: #F5F0E8;
+  padding: 20px 30px;
+  border-bottom: 2px solid #8B7355;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 80px;
+}
+
+/* Info Panels */
 .info-panel {
-  margin-bottom: 15px;
+  background: #F5F0E8;
+  border: 1px solid #8B7355;
   padding: 12px 15px;
-  background: rgba(255,255,255,0.9);
-  border-radius: 6px;
-  border-left: 4px solid #667eea;
+  margin-bottom: 15px;
 }
 
 .turn-indicator {
-  font-size: 1.1em;
-  font-weight: 600;
+  padding: 10px 16px;
+  border: 2px solid #8B7355;
+  background: #EDE4D3;
+  font-size: 15px;
   text-align: center;
 }
 
 .turn-active {
-  background: #e8f5e9;
-  border-left-color: #4caf50;
-  color: #2e7d32;
+  background: #D4C4A8;
+  border-color: #6B5D50;
+  font-weight: bold;
 }
 
 .turn-waiting {
-  background: #fff3e0;
-  border-left-color: #ff9800;
-  color: #e65100;
+  background: #F5F0E8;
+  color: #6B5D50;
 }
 
 .turn-ended {
-  background: #f5f5f5;
-  border-left-color: #9e9e9e;
-  color: #616161;
+  background: #B8A894;
+  color: #4A3F35;
 }
 
 .badge-host {
   display: inline-block;
   margin-left: 10px;
   padding: 3px 8px;
-  background: #667eea;
-  color: white;
-  border-radius: 3px;
-  font-size: 0.75em;
-  font-weight: 700;
+  background: #8B6B47;
+  color: #F5F0E8;
+  border: 1px solid #6B5D50;
+  font-size: 11px;
+  font-weight: bold;
   vertical-align: middle;
 }
 
+/* Status Messages */
 .status-message {
-  margin: 15px 0;
+  margin: 15px 30px;
   padding: 12px 15px;
-  border-radius: 6px;
-  font-weight: 500;
+  border: 2px solid #8B7355;
   display: none;
 }
 
 .status-success {
-  background: #d4edda;
-  color: #155724;
-  border-left: 4px solid #28a745;
+  background: #E8DCC4;
+  color: #3A2E1E;
+  border-color: #6B5D50;
 }
 
 .status-error {
-  background: #f8d7da;
-  color: #721c24;
-  border-left: 4px solid #dc3545;
+  background: #D4C4A8;
+  color: #4A3F35;
+  border-color: #8B6B47;
 }
 
 .status-info {
-  background: #d1ecf1;
-  color: #0c5460;
-  border-left: 4px solid #17a2b8;
+  background: #F5F0E8;
+  color: #4A3F35;
+  border-color: #A89276;
 }
 
 .game-meta {
-  margin-bottom: 20px;
-  font-size: 0.9em;
-  color: #666;
+  padding: 8px 30px;
+  font-size: 14px;
+  color: #6B5D50;
   text-align: center;
+  background: #F5F0E8;
+  border-bottom: 1px solid #D4C4A8;
 }
 
+/* Action Buttons */
 .action-buttons {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px;
-  margin: 20px 0;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 25px 30px;
+  background: #F5F0E8;
+  border-top: 2px solid #8B7355;
 }
 
+.action-buttons .btn-action {
+  min-height: 48px;
+  min-width: 120px;
+  font-size: 14px;
+  padding: 12px 16px;
+  text-align: center;
+  border-width: 2px;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.action-buttons .btn-action:disabled {
+  background: #D4C4A8;
+  color: #9B8B7A;
+  border-color: #B8A894;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Action Log */
 .action-log {
-  margin-top: 30px;
-  padding: 15px;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  background: #D4C4A8;
+  padding: 20px 30px;
+  border-top: 2px solid #8B7355;
 }
 
 .action-log h3 {
-  margin: 0 0 15px 0;
-  font-size: 1em;
-  color: #666;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 8px;
+  font-size: 16px;
+  color: #3A2E1E;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #8B7355;
+  padding-bottom: 5px;
 }
 
 #action-log-content {
-  max-height: 250px;
+  height: 150px;
   overflow-y: auto;
+  border: 1px solid #8B7355;
+  background: #F5F0E8;
+  padding: 10px;
   font-family: 'Courier New', monospace;
-  font-size: 0.85em;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .log-entry {
-  padding: 6px 8px;
-  border-bottom: 1px solid #f0f0f0;
-  color: #333;
-  line-height: 1.4;
+  padding: 4px 0;
+  border-bottom: 1px solid #E8DCC4;
+  color: #4A3F35;
 }
 
 .log-entry:last-child {
@@ -296,81 +413,190 @@ h1 {
 .log-empty {
   padding: 20px;
   text-align: center;
-  color: #999;
+  color: #8B7355;
   font-style: italic;
+  font-family: Georgia, serif;
 }
 
 #game-status {
-  padding: 10px;
+  padding: 10px 30px;
   text-align: center;
-  color: #666;
+  color: #6B5D50;
+  background: #F5F0E8;
 }
 
-/* Mobile Responsive Design */
-@media (max-width: 600px) {
+/* ==================== MOBILE RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
   body {
-    padding: 5px;
+    padding: 10px;
+  }
+  
+  .container {
+    border-width: 2px;
   }
   
   h1 {
-    font-size: 1.8em;
+    font-size: 22px;
+    letter-spacing: 0.5px;
   }
   
-  .subtitle {
-    font-size: 0.95em;
+  h2 {
+    font-size: 20px;
+  }
+  
+  h3 {
+    font-size: 16px;
   }
   
   .tabs {
     flex-direction: column;
-    gap: 0;
   }
   
   .tab-btn {
-    padding: 12px 20px;
-    font-size: 1em;
-    border-bottom: 2px solid #e0e0e0;
+    border-bottom: 1px solid #8B7355;
+    padding: 18px 20px;
+    font-size: 15px;
   }
   
   .tab-btn.active {
-    border-bottom: 3px solid #667eea;
+    border-bottom: 1px solid #6B5D50;
+    border-left: 3px solid #6B5D50;
+  }
+  
+  .tab-content {
+    padding: 20px 15px;
+  }
+  
+  .form-group input {
+    font-size: 16px;
+    padding: 14px 12px;
+    min-height: 48px;
+  }
+  
+  .room-code {
+    font-size: 24px;
+    padding: 18px 15px;
+    letter-spacing: 3px;
+  }
+  
+  .board-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 18px 20px;
+  }
+  
+  .info-panel {
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  
+  .action-buttons {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 20px 15px;
+  }
+  
+  .action-buttons .btn-action {
+    min-height: 52px;
+    font-size: 15px;
+    padding: 16px;
   }
   
   .btn-primary,
   .btn-action {
     width: 100%;
-    padding: 14px 20px;
-    font-size: 0.95em;
-  }
-  
-  .action-buttons {
-    grid-template-columns: 1fr;
-  }
-  
-  .form-group input {
-    font-size: 16px;
-  }
-  
-  .room-code,
-  .peer-id {
-    font-size: 1em;
-    word-break: break-all;
-  }
-  
-  #game-area {
-    padding: 15px 10px;
-  }
-  
-  .info-panel {
-    padding: 10px;
-    font-size: 0.95em;
+    padding: 16px;
+    font-size: 15px;
+    min-height: 52px;
   }
   
   .action-log {
-    padding: 10px;
+    padding: 18px 15px;
   }
   
   #action-log-content {
-    max-height: 200px;
-    font-size: 0.8em;
+    height: 140px;
+    font-size: 12px;
+    padding: 12px;
+  }
+  
+  .status-message {
+    margin: 12px 15px;
+    padding: 14px;
+    font-size: 14px;
+  }
+  
+  .game-meta {
+    padding: 10px 15px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 8px;
+  }
+  
+  .container {
+    border-width: 2px;
+  }
+  
+  h1 {
+    font-size: 20px;
+  }
+  
+  h2 {
+    font-size: 18px;
+  }
+  
+  .subtitle {
+    font-size: 14px;
+  }
+  
+  .tab-btn {
+    padding: 16px;
+    font-size: 14px;
+  }
+  
+  .tab-content {
+    padding: 16px 12px;
+  }
+  
+  .room-code {
+    font-size: 20px;
+    letter-spacing: 2px;
+    padding: 16px 12px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+  }
+  
+  .action-buttons {
+    padding: 16px 12px;
+    gap: 12px;
+  }
+  
+  .action-log {
+    padding: 16px 12px;
+  }
+  
+  .action-log h3 {
+    font-size: 14px;
+  }
+  
+  #action-log-content {
+    height: 120px;
+    font-size: 11px;
+  }
+  
+  #room-info {
+    padding: 18px 15px;
+  }
+  
+  #players-waiting {
+    padding: 16px;
   }
 }
