@@ -186,6 +186,16 @@ export class P2PGameRoom {
         gamePhase: this.game.phase
       };
       
+      // Step 6: Add host as first connected player
+      const hostPlayer = this.game.players[0];
+      this.playerConnections.set(hostPlayer.id, {
+        playerId: hostPlayer.id,
+        playerName: hostPlayer.name,
+        peerId: this.hostPeerId,
+        connected: true,
+        connectedAt: Date.now()
+      });
+      
       this.emit('room-created', roomInfo);
       
       // Step 6: Save room info in browser storage

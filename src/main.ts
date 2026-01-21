@@ -261,11 +261,6 @@ function updatePlayerList() {
     Array.from(connections.values()).map((conn: any) => conn.playerId)
   );
   
-  // Host (player_0) is always connected
-  if (game.players && game.players.length > 0) {
-    connectedPlayerIds.add(game.players[0].id);
-  }
-  
   playerList.innerHTML = game.players.map((player: any, index: number) => {
     const isConnected = connectedPlayerIds.has(player.id);
     const statusIcon = isConnected ? '✅' : '⏳';
