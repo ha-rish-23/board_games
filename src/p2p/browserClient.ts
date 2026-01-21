@@ -483,7 +483,10 @@ export class P2PGameClient {
         
       default:
         // Check for custom message types
-        if ((message as any).type === 'PLAYER_ASSIGNED') {
+        if ((message as any).type === 'PING') {
+          // Keepalive ping - no action needed, just updates lastHostMessage
+          console.log('[Client] Received keepalive ping');
+        } else if ((message as any).type === 'PLAYER_ASSIGNED') {
           this.handlePlayerAssigned(message as any);
         } else if ((message as any).type === 'RESYNC_RESPONSE') {
           this.handleResyncResponse(message as any);
